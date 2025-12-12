@@ -754,6 +754,9 @@
     const FILE_PATH = "data.json";
     const TOKEN = "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";
 
+    // Local Storage Key for backup/cache
+    const STORAGE_KEY = 'laporan-kerja-tasks-cache';
+
     // ===============================
     // STATE MANAGEMENT
     // ===============================
@@ -769,14 +772,20 @@
         const url = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${FILE_PATH}`;
         const res = await fetch(url);
         if (!res.ok) {
-          if (res.status === 404) return [];
+          if (res.status === 404) {
+            // File doesn't exist yet, try to load from local cache
+            return await loadFromLocalCache();
+          }
           throw new Error('Failed to load data');
         }
-        return await res.json();
+        const data = await res.json();
+        // Save to local cache as backup
+        await saveToLocalCache(data);
+        return data;
       } catch (error) {
         console.error('Error loading from GitHub:', error);
-        showToast('Error', 'Gagal memuat data dari GitHub', 'error');
-        return [];
+        showToast('Peringatan', 'Gagal memuat dari GitHub, menggunakan cache lokal', 'error');
+        return await loadFromLocalCache();
       }
     }
 
@@ -812,379 +821,122 @@
           throw new Error('Failed to save data');
         }
 
+        // Save to local cache as backup
+        await saveToLocalCache(newData);
         return true;
       } catch (error) {
         console.error('Error saving to GitHub:', error);
-        showToast('Error', 'Gagal menyimpan ke GitHub', 'error');
+        showToast('Error', 'Gagal menyimpan ke GitHub, tersimpan di cache lokal', 'error');
+        // Save to local cache as fallback
+        await saveToLocalCache(newData);
         return false;
       }
     }
 
     // ===============================
-    // INITIALIZATION
+    // LOCAL CACHE FUNCTIONS (BACKUP)
     // ===============================
-    document.addEventListener('DOMContentLoaded', async () => {
-      updateCurrentDate();
-      setupFilterButtons();
+    async function loadFromLocalCache() {
+      try {
+        const cached = localStorage.getItem(STORAGE_KEY);
+        if (cached) {
+          return JSON.parse(cached);
+        }
+        return [];
+      } catch (error) {
+        console.error('Error loading from cache:', error);
+        return [];
+      }
+    }
+
+    async function saveToLocalCache(data) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      } catch (error) {
+        console.error('Error saving to cache:', error);
+      }
+    }
+
+    async function clearLocalCache() {
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        showToast('Berhasil', 'Cache lokal berhasil dihapus', 'success');
+      } catch (error) {
+        console.error('Error clearing cache:', error);
+      }
+    }
+
+    // ===============================
+    // EXPORT/IMPORT FUNCTIONS
+    // ===============================
+    async function exportData() {
+      const dataStr = JSON.stringify(tasks, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `laporan-kerja-${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      showToast('Berhasil', 'Data berhasil diekspor', 'success');
+    }
+
+    async function importData(file) {
+      try {
+        const text = await file.text();
+        const importedTasks = JSON.parse(text);
+        
+        if (!Array.isArray(importedTasks)) {
+          throw new Error('Format file tidak valid');
+        }
+        
+        if (confirm(`Import ${importedTasks.length} data? Data yang ada akan diganti.`)) {
+          tasks = importedTasks;
+          await saveDataToGitHub(tasks);
+          renderTasks();
+          showToast('Berhasil', 'Data berhasil diimpor dan disimpan ke GitHub', 'success');
+        }
+      } catch (error) {
+        console.error('Error importing data:', error);
+        showToast('Error', 'Gagal mengimpor data. Pastikan format file benar.', 'error');
+      }
+    }
+
+    async function syncWithGitHub() {
+      if (isLoading) return;
+      isLoading = true;
       
-      tasks = await loadDataFromGitHub();
+      showToast('Info', 'Menyinkronkan dengan GitHub...', 'success');
       
-      document.getElementById('loading-state').style.display = 'none';
-      document.getElementById('main-content').style.display = 'block';
-      
+      const freshData = await loadDataFromGitHub();
+      tasks = freshData;
       renderTasks();
-      updateTaskStatuses();
       
-      setInterval(updateTaskStatuses, 60000);
-    });
-
-    // ===============================
-    // DATE FUNCTIONS
-    // ===============================
-    function updateCurrentDate() {
-      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      const date = new Date().toLocaleDateString('id-ID', options);
-      document.getElementById('current-date').textContent = date;
+      isLoading = false;
+      showToast('Berhasil', 'Data berhasil disinkronkan dari GitHub', 'success');
     }
 
-    function formatDate(dateStr) {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    }
-
-    function formatDateTime(dateStr) {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('id-ID', { 
-        day: 'numeric', 
-        month: 'short', 
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
-
-    // ===============================
-    // TASK STATUS MANAGEMENT
-    // ===============================
-    async function updateTaskStatuses() {
-      const now = new Date();
-      let updated = false;
+    async function clearAllData() {
+      if (!confirm('Yakin ingin menghapus SEMUA data? Tindakan ini tidak dapat dibatalkan!')) {
+        return;
+      }
       
-      tasks.forEach(task => {
-        if (task.status === 'pending' && new Date(task.deadline) < now) {
-          task.status = 'late';
-          updated = true;
-        }
-      });
+      if (!confirm('Konfirmasi sekali lagi: Hapus SEMUA data?')) {
+        return;
+      }
       
-      if (updated) {
+      try {
+        tasks = [];
         await saveDataToGitHub(tasks);
+        await clearLocalCache();
         renderTasks();
+        showToast('Berhasil', 'Semua data berhasil dihapus', 'success');
+      } catch (error) {
+        console.error('Error clearing data:', error);
+        showToast('Error', 'Gagal menghapus data', 'error');
       }
     }
 
-    // ===============================
-    // STATISTICS
-    // ===============================
-    function updateStats() {
-      const total = tasks.length;
-      const completed = tasks.filter(t => t.status === 'completed').length;
-      const late = tasks.filter(t => t.status === 'late').length;
-      const pending = tasks.filter(t => t.status === 'pending').length;
-
-      document.getElementById('stat-total').textContent = total;
-      document.getElementById('stat-completed').textContent = completed;
-      document.getElementById('stat-late').textContent = late;
-      document.getElementById('stat-pending').textContent = pending;
-    }
-
-    // ===============================
-    // RENDER TASKS
-    // ===============================
-    function renderTasks() {
-      updateStats();
-      
-      const filteredTasks = currentFilter === 'all' 
-        ? tasks 
-        : tasks.filter(t => t.status === currentFilter);
-      
-      const sortedTasks = [...filteredTasks].sort((a, b) => {
-        if (a.status === 'pending' && b.status !== 'pending') return -1;
-        if (a.status !== 'pending' && b.status === 'pending') return 1;
-        return new Date(b.createdAt) - new Date(a.createdAt);
-      });
-
-      const taskList = document.getElementById('task-list');
-      const emptyState = document.getElementById('empty-state');
-
-      if (sortedTasks.length === 0) {
-        taskList.innerHTML = '';
-        emptyState.style.display = 'block';
-        
-        const emptyTitle = document.getElementById('empty-title');
-        const emptyMessage = document.getElementById('empty-message');
-        
-        if (currentFilter === 'all') {
-          emptyTitle.textContent = 'Belum ada pekerjaan';
-          emptyMessage.textContent = 'Klik tombol "Tambah Pekerjaan" untuk memulai';
-        } else {
-          const labels = { pending: 'pending', completed: 'selesai', late: 'terlambat' };
-          emptyTitle.textContent = `Tidak ada pekerjaan ${labels[currentFilter]}`;
-          emptyMessage.textContent = 'Coba filter lain untuk melihat pekerjaan';
-        }
-      } else {
-        emptyState.style.display = 'none';
-        taskList.innerHTML = sortedTasks.map(task => createTaskCard(task)).join('');
-      }
-    }
-
-    // ===============================
-    // CREATE TASK CARD
-    // ===============================
-    function createTaskCard(task) {
-      const statusIcons = {
-        completed: `<svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`,
-        late: `<svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>`,
-        pending: `<svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
-      };
-
-      const badgeLabels = { completed: 'Selesai', late: 'Terlambat', pending: 'Pending' };
-
-      return `
-        <div class="task-card ${task.status}" id="task-${task.id}">
-          <div class="task-header" onclick="toggleTask('${task.id}')">
-            <div class="task-header-left">
-              <div class="task-status-icon ${task.status}">
-                ${statusIcons[task.status]}
-              </div>
-              <div>
-                <div class="task-title">${escapeHtml(task.title)}</div>
-                <div class="task-deadline">Deadline: ${formatDate(task.deadline)}</div>
-              </div>
-            </div>
-            <div class="task-header-right">
-              <span class="badge ${task.status}">${badgeLabels[task.status]}</span>
-              <button class="btn btn-ghost">
-                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div class="task-content" id="content-${task.id}">
-            <div class="task-description">
-              <h4>Deskripsi:</h4>
-              <p>${task.description ? escapeHtml(task.description) : 'Tidak ada deskripsi'}</p>
-            </div>
-            <div class="task-meta">
-              <div>
-                <span>Unit:</span>
-                <p>${task.unit ? escapeHtml(task.unit) : '-'}</p>
-              </div>
-              <div>
-                <span>Alamat:</span>
-                <p>${task.alamat ? escapeHtml(task.alamat) : '-'}</p>
-              </div>
-              <div>
-                <span>Jumlah Kendaraan:</span>
-                <p>${task.jumlahKendaraan || 0}</p>
-              </div>
-              <div>
-                <span>Jumlah Personel:</span>
-                <p>${task.jumlahPersonel || 0}</p>
-              </div>
-              <div>
-                <span>Dibuat:</span>
-                <p>${formatDateTime(task.createdAt)}</p>
-              </div>
-              ${task.completedAt ? `
-                <div>
-                  <span>Diselesaikan:</span>
-                  <p>${formatDateTime(task.completedAt)}</p>
-                </div>
-              ` : ''}
-            </div>
-            <div class="task-actions">
-              ${task.status === 'pending' ? `
-                <button class="btn btn-success" onclick="completeTask('${task.id}')">
-                  <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                  </svg>
-                  Tandai Selesai
-                </button>
-              ` : ''}
-              <button class="btn btn-danger" onclick="deleteTask('${task.id}')">
-                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
-
-    // ===============================
-    // TASK ACTIONS
-    // ===============================
-    function toggleTask(id) {
-      const content = document.getElementById(`content-${id}`);
-      content.classList.toggle('show');
-    }
-
-    async function completeTask(id) {
-      if (isLoading) return;
-      isLoading = true;
-      
-      const task = tasks.find(t => t.id === id);
-      if (task) {
-        const now = new Date();
-        const isLate = now > new Date(task.deadline);
-        task.status = isLate ? 'late' : 'completed';
-        task.completedAt = now.toISOString();
-        
-        const success = await saveDataToGitHub(tasks);
-        if (success) {
-          renderTasks();
-          showToast('Berhasil', 'Pekerjaan ditandai selesai', 'success');
-        }
-      }
-      
-      isLoading = false;
-    }
-
-    async function deleteTask(id) {
-      if (isLoading) return;
-      
-      if (!confirm('Yakin ingin menghapus pekerjaan ini?')) return;
-      
-      isLoading = true;
-      tasks = tasks.filter(t => t.id !== id);
-      
-      const success = await saveDataToGitHub(tasks);
-      if (success) {
-        renderTasks();
-        showToast('Berhasil', 'Pekerjaan dihapus', 'success');
-      }
-      
-      isLoading = false;
-    }
-
-    // ===============================
-    // FILTER
-    // ===============================
-    function setupFilterButtons() {
-      document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          currentFilter = btn.dataset.filter;
-          renderTasks();
-        });
-      });
-    }
-
-    // ===============================
-    // MODAL
-    // ===============================
-    function openModal() {
-      document.getElementById('modal-overlay').classList.add('show');
-      document.getElementById('title').focus();
-    }
-
-    function closeModal(event) {
-      if (!event || event.target === document.getElementById('modal-overlay')) {
-        document.getElementById('modal-overlay').classList.remove('show');
-        document.getElementById('task-form').reset();
-      }
-    }
-
-    // ===============================
-    // FORM SUBMIT
-    // ===============================
-    async function handleSubmit(event) {
-      event.preventDefault();
-      
-      if (isLoading) return;
-      
-      const title = document.getElementById('title').value.trim();
-      const description = document.getElementById('description').value.trim();
-      const deadline = document.getElementById('deadline').value;
-      const unit = document.getElementById('unit').value.trim();
-      const alamat = document.getElementById('alamat').value.trim();
-      const jumlahKendaraan = parseInt(document.getElementById('jumlah-kendaraan').value) || 0;
-      const jumlahPersonel = parseInt(document.getElementById('jumlah-personel').value) || 0;
-
-      if (!title) {
-        showToast('Error', 'Judul pekerjaan harus diisi', 'error');
-        return;
-      }
-
-      if (!deadline) {
-        showToast('Error', 'Deadline harus dipilih', 'error');
-        return;
-      }
-
-      isLoading = true;
-      
-      document.getElementById('submit-btn').disabled = true;
-      document.getElementById('add-btn').disabled = true;
-
-      const newTask = {
-        id: Date.now().toString(),
-        title,
-        description,
-        deadline,
-        unit,
-        alamat,
-        jumlahKendaraan,
-        jumlahPersonel,
-        createdAt: new Date().toISOString(),
-        status: 'pending'
-      };
-
-      tasks.push(newTask);
-      
-      const success = await saveDataToGitHub(tasks);
-      
-      if (success) {
-        renderTasks();
-        closeModal();
-        showToast('Berhasil', 'Pekerjaan berhasil ditambahkan', 'success');
-      } else {
-        tasks.pop();
-      }
-      
-      document.getElementById('submit-btn').disabled = false;
-      document.getElementById('add-btn').disabled = false;
-      isLoading = false;
-    }
-
-    // ===============================
-    // TOAST NOTIFICATION
-    // ===============================
-    function showToast(title, message, type = 'success') {
-      const container = document.getElementById('toast-container');
-      const toast = document.createElement('div');
-      toast.className = `toast ${type}`;
-      toast.innerHTML = `
-        <div class="toast-title">${title}</div>
-        <div class="toast-message">${message}</div>
-      `;
-      container.appendChild(toast);
-
-      setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
-        setTimeout(() => toast.remove(), 300);
-      }, 3000);
-    }
   </script>
 </body>
 </html>
