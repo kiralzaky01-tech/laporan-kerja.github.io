@@ -662,6 +662,14 @@
           </button>
         </div>
         <div id="settings-menu" class="settings-dropdown" style="display: none;">
+          <button onclick="openConfigModal()">
+            <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            Konfigurasi GitHub
+            <span id="config-status" class="config-badge">⚠️ Belum diatur</span>
+          </button>
           <button onclick="syncWithGitHub()">
             <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
@@ -817,6 +825,41 @@
     </div>
   </div>
 
+  <!-- Modal Konfigurasi GitHub -->
+  <div class="modal-overlay" id="config-modal-overlay" onclick="closeConfigModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h2>⚙️ Konfigurasi GitHub</h2>
+      <p style="color: var(--muted); font-size: 0.875rem; margin-bottom: 20px;">
+        Masukkan informasi repository GitHub Anda untuk menyimpan data.
+      </p>
+      <form id="config-form" onsubmit="handleConfigSubmit(event)">
+        <div class="form-group">
+          <label for="config-owner">Repository Owner (Username)</label>
+          <input type="text" id="config-owner" placeholder="contoh: kiralzaky01" required>
+        </div>
+        <div class="form-group">
+          <label for="config-repo">Repository Name</label>
+          <input type="text" id="config-repo" placeholder="contoh: laporan.github.io" required>
+        </div>
+        <div class="form-group">
+          <label for="config-token">GitHub Personal Access Token</label>
+          <input type="password" id="config-token" placeholder="ghp_xxxxxxxxxxxx..." required>
+          <small style="color: var(--muted); font-size: 0.75rem; margin-top: 4px; display: block;">
+            <a href="https://github.com/settings/tokens/new" target="_blank" style="color: var(--primary);">Buat token baru di sini</a> dengan scope "repo"
+          </small>
+        </div>
+        <div class="form-group">
+          <label for="config-branch">Branch</label>
+          <input type="text" id="config-branch" placeholder="main" value="main" required>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeConfigModal()">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan Konfigurasi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast Container -->
   <div class="toast-container" id="toast-container"></div>
 
@@ -824,11 +867,65 @@
     // ===============================
     // GITHUB CONFIGURATION
     // ===============================
-    const REPO_OWNER = "kiralzaky01";
-    const REPO_NAME = "laporan.github.io";
+    const CONFIG_STORAGE_KEY = 'laporan-kerja-github-config';
     const FILE_PATH = "data.json";
-    const BRANCH = "main"; // atau "master" tergantung branch default repo Anda
-    const TOKEN = "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";
+    
+    let REPO_OWNER = "";
+    let REPO_NAME = "";
+    let BRANCH = "main";
+    let TOKEN = "";
+
+    // Load saved config
+    function loadGitHubConfig() {
+      try {
+        const saved = localStorage.getItem(CONFIG_STORAGE_KEY);
+        if (saved) {
+          const config = JSON.parse(saved);
+          REPO_OWNER = config.owner || "";
+          REPO_NAME = config.repo || "";
+          BRANCH = config.branch || "main";
+          TOKEN = config.token || "";
+          
+          if (TOKEN) {
+            updateConfigStatus(true);
+          }
+          
+          return true;
+        }
+      } catch (error) {
+        console.error('Error loading config:', error);
+      }
+      return false;
+    }
+
+    function saveGitHubConfig(owner, repo, token, branch) {
+      try {
+        const config = { owner, repo, token, branch };
+        localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config));
+        REPO_OWNER = owner;
+        REPO_NAME = repo;
+        TOKEN = token;
+        BRANCH = branch;
+        updateConfigStatus(true);
+        return true;
+      } catch (error) {
+        console.error('Error saving config:', error);
+        return false;
+      }
+    }
+
+    function updateConfigStatus(isConfigured) {
+      const statusBadge = document.getElementById('config-status');
+      if (statusBadge) {
+        if (isConfigured) {
+          statusBadge.textContent = '✓ Terkonfigurasi';
+          statusBadge.className = 'config-badge success';
+        } else {
+          statusBadge.textContent = '⚠️ Belum diatur';
+          statusBadge.className = 'config-badge';
+        }
+      }
+    }
 
     // Local Storage Key for backup/cache
     const STORAGE_KEY = 'laporan-kerja-tasks-cache';
@@ -844,6 +941,11 @@
     // GITHUB API FUNCTIONS
     // ===============================
     async function loadDataFromGitHub() {
+      if (!TOKEN) {
+        console.log('No GitHub token configured, using local cache only');
+        return await loadFromLocalCache();
+      }
+      
       try {
         const url = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${BRANCH}/${FILE_PATH}`;
         console.log('Loading from:', url);
@@ -878,6 +980,13 @@
     }
 
     async function saveDataToGitHub(newData) {
+      if (!TOKEN) {
+        console.log('No GitHub token configured, saving to local cache only');
+        await saveToLocalCache(newData);
+        showToast('Info', 'Data disimpan di cache lokal. Konfigurasi GitHub untuk sync online.', 'error');
+        return false;
+      }
+      
       try {
         console.log('Saving to GitHub...', newData.length, 'tasks');
         
@@ -1060,6 +1169,14 @@
     document.addEventListener('DOMContentLoaded', async () => {
       updateCurrentDate();
       setupFilterButtons();
+      
+      // Load GitHub config first
+      const hasConfig = loadGitHubConfig();
+      
+      if (!hasConfig) {
+        showToast('Info', 'Silakan konfigurasi GitHub terlebih dahulu', 'error');
+        updateConfigStatus(false);
+      }
       
       tasks = await loadDataFromGitHub();
       
@@ -1442,6 +1559,88 @@
       const menu = document.getElementById('settings-menu');
       if (menu) menu.style.display = 'none';
     });
+
+    // ===============================
+    // CONFIG MODAL
+    // ===============================
+    function openConfigModal() {
+      // Load existing config
+      const saved = localStorage.getItem(CONFIG_STORAGE_KEY);
+      if (saved) {
+        try {
+          const config = JSON.parse(saved);
+          document.getElementById('config-owner').value = config.owner || '';
+          document.getElementById('config-repo').value = config.repo || '';
+          document.getElementById('config-branch').value = config.branch || 'main';
+          document.getElementById('config-token').value = config.token || '';
+        } catch (e) {
+          console.error('Error loading config:', e);
+        }
+      }
+      
+      document.getElementById('config-modal-overlay').classList.add('show');
+      document.getElementById('config-owner').focus();
+    }
+
+    function closeConfigModal(event) {
+      if (!event || event.target === document.getElementById('config-modal-overlay')) {
+        document.getElementById('config-modal-overlay').classList.remove('show');
+      }
+    }
+
+    async function handleConfigSubmit(event) {
+      event.preventDefault();
+      
+      const owner = document.getElementById('config-owner').value.trim();
+      const repo = document.getElementById('config-repo').value.trim();
+      const token = document.getElementById('config-token').value.trim();
+      const branch = document.getElementById('config-branch').value.trim() || 'main';
+      
+      if (!owner || !repo || !token) {
+        showToast('Error', 'Semua field harus diisi', 'error');
+        return;
+      }
+      
+      // Test connection
+      showToast('Info', 'Menguji koneksi ke GitHub...', 'success');
+      
+      const testUrl = `https://api.github.com/repos/${owner}/${repo}`;
+      try {
+        const res = await fetch(testUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        
+        if (!res.ok) {
+          if (res.status === 404) {
+            throw new Error('Repository tidak ditemukan');
+          } else if (res.status === 401) {
+            throw new Error('Token tidak valid');
+          } else {
+            throw new Error(`HTTP ${res.status}`);
+          }
+        }
+        
+        const repoData = await res.json();
+        console.log('Repository found:', repoData.full_name);
+        
+        // Save config
+        if (saveGitHubConfig(owner, repo, token, branch)) {
+          closeConfigModal();
+          showToast('Berhasil', 'Konfigurasi GitHub berhasil disimpan!', 'success');
+          
+          // Reload data from GitHub
+          tasks = await loadDataFromGitHub();
+          renderTasks();
+        }
+        
+      } catch (error) {
+        console.error('Config test failed:', error);
+        showToast('Error', 'Gagal terhubung: ' + error.message, 'error');
+      }
+    }
   </script>
 </body>
 </html>group">
