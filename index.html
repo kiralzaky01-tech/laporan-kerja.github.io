@@ -6,394 +6,300 @@
 <title>Laporan Kerja</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  :root {
-    --bg: #f0f2f7;
-    --surface: #ffffff;
-    --dark: #0f172a;
-    --navy: #1e293b;
-    --blue: #3b82f6;
-    --green: #10b981;
-    --green-dark: #059669;
-    --amber: #f59e0b;
-    --amber-dark: #d97706;
-    --red: #ef4444;
-    --red-dark: #dc2626;
-    --muted: #64748b;
-    --border: #e2e8f0;
-    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
-    --shadow-lg: 0 8px 32px rgba(0,0,0,0.13);
-  }
+:root {
+  --bg: #f0f2f7;
+  --surface: #ffffff;
+  --dark: #0f172a;
+  --navy: #1e293b;
+  --blue: #3b82f6;
+  --green: #10b981;
+  --green-dark: #059669;
+  --amber: #f59e0b;
+  --amber-dark: #d97706;
+  --red: #ef4444;
+  --red-dark: #dc2626;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.13);
+}
 
-  body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    background: var(--bg);
-    color: var(--dark);
-    min-height: 100vh;
-  }
+body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--dark); min-height: 100vh; }
 
-  .header {
-    background: var(--dark);
-    padding: 0 32px;
-    height: 70px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
-  }
+/* ── HEADER ── */
+.header {
+  background: var(--dark); padding: 0 32px; height: 70px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.header-icon { width: 40px; height: 40px; background: rgba(59,130,246,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.header-title { font-size: 20px; font-weight: 700; color: #fff; }
+.header-date  { font-size: 13px; color: rgba(255,255,255,0.45); margin-top: 2px; }
 
-  .header-left { display: flex; align-items: center; gap: 14px; }
+.header-right { display: flex; align-items: center; gap: 10px; }
 
-  .header-icon {
-    width: 40px; height: 40px;
-    background: rgba(59,130,246,0.2);
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
-  }
+.btn-tambah {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface); color: var(--dark);
+  border: none; padding: 10px 22px; border-radius: 10px;
+  font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+.btn-tambah:hover { background: #f1f5f9; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 
-  .header-title { font-size: 20px; font-weight: 700; color: #fff; }
-  .header-date  { font-size: 13px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+.btn-github {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.85);
+  border: 1px solid rgba(255,255,255,0.18); padding: 9px 18px; border-radius: 10px;
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+.btn-github:hover { background: rgba(255,255,255,0.18); color: #fff; border-color: rgba(255,255,255,0.35); }
+.btn-github svg { flex-shrink: 0; }
 
-  .btn-tambah {
-    display: flex; align-items: center; gap: 8px;
-    background: var(--surface); color: var(--dark);
-    border: none; padding: 10px 22px; border-radius: 10px;
-    font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
-    transition: all 0.2s;
-  }
-  .btn-tambah:hover { background: #f1f5f9; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+/* ── MAIN ── */
+.main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
 
-  .main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+/* ── STATS ── */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+.stat-card {
+  background: var(--surface); border-radius: 16px; padding: 20px 22px;
+  display: flex; align-items: center; gap: 16px;
+  box-shadow: var(--shadow); border: 1px solid var(--border); transition: transform 0.2s;
+}
+.stat-card:hover { transform: translateY(-2px); }
+.stat-icon-wrap { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.stat-icon-total    { background: #f1f5f9; }
+.stat-icon-selesai  { background: #d1fae5; }
+.stat-icon-pending  { background: #fef3c7; }
+.stat-icon-terlambat{ background: #fee2e2; }
+.stat-num   { font-size: 28px; font-weight: 800; line-height: 1; color: var(--dark); }
+.stat-label { font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 3px; }
 
-  .stats-grid {
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    gap: 16px; margin-bottom: 28px;
-  }
+/* ── FILTER ── */
+.filter-row { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+.filter-btn { padding: 9px 20px; border-radius: 100px; border: 1px solid var(--border); font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; background: var(--surface); color: var(--muted); }
+.filter-btn:hover { border-color: var(--blue); color: var(--blue); }
+.filter-btn.active { background: var(--dark); color: #fff; border-color: var(--dark); }
 
-  .stat-card {
-    background: var(--surface); border-radius: 16px; padding: 20px 22px;
-    display: flex; align-items: center; gap: 16px;
-    box-shadow: var(--shadow); border: 1px solid var(--border); transition: transform 0.2s;
-  }
-  .stat-card:hover { transform: translateY(-2px); }
+/* ── SEARCH ── */
+.search-wrap { position: relative; margin-bottom: 20px; }
+.search-wrap input { width: 100%; padding: 12px 16px 12px 44px; border: 1px solid var(--border); border-radius: 12px; font-family: inherit; font-size: 14px; background: var(--surface); color: var(--dark); outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+.search-wrap input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+.search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 16px; }
 
-  .stat-icon-wrap {
-    width: 44px; height: 44px; border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px; flex-shrink: 0;
-  }
-  .stat-icon-total    { background: #f1f5f9; }
-  .stat-icon-selesai  { background: #d1fae5; }
-  .stat-icon-pending  { background: #fef3c7; }
-  .stat-icon-terlambat{ background: #fee2e2; }
+.auto-notice { display: flex; align-items: center; gap: 10px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 10px 16px; font-size: 13px; color: #9a3412; font-weight: 500; margin-bottom: 20px; animation: slideIn 0.3s ease; }
 
-  .stat-num   { font-size: 28px; font-weight: 800; line-height: 1; color: var(--dark); }
-  .stat-label { font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 3px; }
+.list-wrap { display: flex; flex-direction: column; gap: 12px; }
+.empty-state { text-align: center; padding: 80px 20px; color: var(--muted); }
+.empty-state svg { margin-bottom: 16px; opacity: 0.3; }
+.empty-state p { font-size: 15px; }
 
-  .filter-row { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+/* ── CARD ── */
+.pekerjaan-card { background: var(--surface); border-radius: 16px; border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; transition: all 0.25s; animation: slideIn 0.3s ease; }
+@keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.pekerjaan-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+.pekerjaan-card.card-terlambat { border-color: #fca5a5; box-shadow: 0 0 0 1px #fca5a5, var(--shadow); }
 
-  .filter-btn {
-    padding: 9px 20px; border-radius: 100px;
-    border: 1px solid var(--border); font-family: inherit;
-    font-size: 14px; font-weight: 600; cursor: pointer;
-    transition: all 0.2s; background: var(--surface); color: var(--muted);
-  }
-  .filter-btn:hover { border-color: var(--blue); color: var(--blue); }
-  .filter-btn.active { background: var(--dark); color: #fff; border-color: var(--dark); }
+.card-inner { display: flex; align-items: flex-start; }
+.card-accent { width: 5px; align-self: stretch; flex-shrink: 0; min-height: 80px; }
+.accent-pending   { background: var(--amber); }
+.accent-selesai   { background: var(--green); }
+.accent-terlambat { background: var(--red); }
 
-  .search-wrap { position: relative; margin-bottom: 20px; }
-  .search-wrap input {
-    width: 100%; padding: 12px 16px 12px 44px;
-    border: 1px solid var(--border); border-radius: 12px;
-    font-family: inherit; font-size: 14px;
-    background: var(--surface); color: var(--dark);
-    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  .search-wrap input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
-  .search-icon {
-    position: absolute; left: 14px; top: 50%;
-    transform: translateY(-50%); color: var(--muted); font-size: 16px;
-  }
+.card-content { flex: 1; padding: 18px 20px 14px 20px; min-width: 0; }
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.card-title { font-size: 16px; font-weight: 700; color: var(--dark); line-height: 1.3; }
+.card-top-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
-  .auto-notice {
-    display: flex; align-items: center; gap: 10px;
-    background: #fff7ed; border: 1px solid #fed7aa;
-    border-radius: 10px; padding: 10px 16px;
-    font-size: 13px; color: #9a3412; font-weight: 500;
-    margin-bottom: 20px;
-    animation: slideIn 0.3s ease;
-  }
+.card-badge { padding: 4px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; display: flex; align-items: center; gap: 5px; }
+.badge-pending   { background: #fef3c7; color: #92400e; }
+.badge-selesai   { background: #d1fae5; color: #065f46; }
+.badge-terlambat { background: #fee2e2; color: #991b1b; }
 
-  .list-wrap { display: flex; flex-direction: column; gap: 12px; }
+.badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.badge-pending .badge-dot   { background: var(--amber); }
+.badge-selesai .badge-dot   { background: var(--green); }
+.badge-terlambat .badge-dot { background: var(--red); animation: blink 1.2s ease-in-out infinite; }
+@keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
 
-  .empty-state { text-align: center; padding: 80px 20px; color: var(--muted); }
-  .empty-state svg { margin-bottom: 16px; opacity: 0.3; }
-  .empty-state p { font-size: 15px; }
+.card-desc  { font-size: 13px; color: var(--muted); margin-bottom: 10px; line-height: 1.6; }
+.card-meta  { display: flex; flex-wrap: wrap; gap: 14px; }
+.meta-item  { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); font-weight: 500; }
+.deadline-overdue { color: var(--red) !important; font-weight: 700 !important; }
 
-  /* ── CARD ── */
-  .pekerjaan-card {
-    background: var(--surface); border-radius: 16px;
-    border: 1px solid var(--border); box-shadow: var(--shadow);
-    overflow: hidden; transition: all 0.25s;
-    animation: slideIn 0.3s ease;
-  }
+.countdown-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 100px; margin-left: 6px; }
+.chip-ok     { background: #d1fae5; color: #065f46; }
+.chip-warn   { background: #fef3c7; color: #92400e; }
+.chip-overdue{ background: #fee2e2; color: #991b1b; }
 
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
+.action-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: all 0.18s; }
+.action-btn:hover { background: #e2e8f0; transform: scale(1.1); }
+.action-btn.delete:hover { background: #fee2e2; border-color: #fca5a5; }
 
-  .pekerjaan-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
-  .pekerjaan-card.card-terlambat { border-color: #fca5a5; box-shadow: 0 0 0 1px #fca5a5, var(--shadow); }
+/* ── STATUS ROW ── */
+.status-btn-row {
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  padding: 12px 20px 14px 25px;
+  background: #f8fafc; border-top: 1px solid var(--border);
+}
+.status-label-text { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.5px; text-transform: uppercase; margin-right: 4px; flex-shrink: 0; }
 
-  .card-inner { display: flex; align-items: flex-start; }
+/* Indicators — non-interactive */
+.status-indicator { padding: 6px 14px; border-radius: 8px; border: 1.5px dashed transparent; font-family: inherit; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; letter-spacing: 0.2px; cursor: default; user-select: none; pointer-events: none; }
 
-  .card-accent {
-    width: 5px; align-self: stretch; flex-shrink: 0; min-height: 80px;
-  }
-  .accent-pending   { background: var(--amber); }
-  .accent-selesai   { background: var(--green); }
-  .accent-terlambat { background: var(--red); }
+.ind-pending-active   { background: var(--amber); color: #fff; border-color: var(--amber-dark); box-shadow: 0 4px 10px rgba(245,158,11,0.3); }
+.ind-pending-inactive { background: #fef9ec; color: #b8860b; border-color: #fde68a; opacity: 0.55; }
+.ind-terlambat-active { background: var(--red); color: #fff; border-color: var(--red-dark); box-shadow: 0 4px 10px rgba(239,68,68,0.3); }
+.ind-terlambat-inactive { background: #fff5f5; color: #c0392b; border-color: #fecaca; opacity: 0.55; }
 
-  .card-content { flex: 1; padding: 18px 20px 14px 20px; min-width: 0; }
+/* Selesai button — clickable only when NOT terlambat */
+.sbtn-selesai {
+  padding: 6px 18px; border-radius: 8px; border: 2px solid #a7f3d0;
+  font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  transition: all 0.18s; display: flex; align-items: center; gap: 6px;
+  background: #d1fae5; color: #065f46; position: relative;
+}
+.sbtn-selesai:hover:not(.sbtn-active):not(.sbtn-disabled) {
+  background: #a7f3d0; border-color: var(--green); transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16,185,129,0.25);
+}
+.sbtn-selesai.sbtn-active { background: var(--green); color: #fff; border-color: var(--green-dark); box-shadow: 0 4px 12px rgba(16,185,129,0.4); cursor: default; }
 
-  .card-top {
-    display: flex; align-items: flex-start;
-    justify-content: space-between; gap: 12px; margin-bottom: 6px;
-  }
+/* Disabled state — terlambat can't be set to selesai */
+.sbtn-selesai.sbtn-disabled {
+  background: #f1f5f9; color: #94a3b8; border-color: #e2e8f0;
+  cursor: not-allowed; opacity: 0.6; pointer-events: none;
+}
+.disabled-tooltip-wrap { position: relative; display: inline-flex; }
+.disabled-tooltip-wrap .tooltip {
+  position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+  background: var(--dark); color: #fff; font-size: 11px; font-weight: 500;
+  padding: 5px 10px; border-radius: 7px; white-space: nowrap; pointer-events: none;
+  opacity: 0; transition: opacity 0.2s; z-index: 10;
+}
+.disabled-tooltip-wrap .tooltip::after { content:''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--dark); }
+.disabled-tooltip-wrap:hover .tooltip { opacity: 1; }
 
-  .card-title { font-size: 16px; font-weight: 700; color: var(--dark); line-height: 1.3; }
+/* ── GITHUB MODAL ── */
+.gh-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
+  z-index: 300; display: flex; align-items: center; justify-content: center; padding: 20px;
+  opacity: 0; pointer-events: none; transition: opacity 0.25s;
+}
+.gh-modal-overlay.open { opacity: 1; pointer-events: all; }
 
-  .card-top-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.gh-modal {
+  background: var(--surface); border-radius: 20px; width: 100%; max-width: 520px;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.3);
+  transform: translateY(20px) scale(0.97);
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  overflow: hidden;
+}
+.gh-modal-overlay.open .gh-modal { transform: translateY(0) scale(1); }
 
-  .card-badge {
-    padding: 4px 12px; border-radius: 100px;
-    font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
-    display: flex; align-items: center; gap: 5px;
-  }
-  .badge-pending   { background: #fef3c7; color: #92400e; }
-  .badge-selesai   { background: #d1fae5; color: #065f46; }
-  .badge-terlambat { background: #fee2e2; color: #991b1b; }
+.gh-modal-head {
+  background: var(--dark); padding: 22px 28px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.gh-modal-head-left { display: flex; align-items: center; gap: 12px; }
+.gh-modal-head-icon { width: 38px; height: 38px; background: rgba(255,255,255,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.gh-modal-head-title { font-size: 16px; font-weight: 700; color: #fff; }
+.gh-modal-head-sub { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+.gh-modal-close { width: 30px; height: 30px; background: rgba(255,255,255,0.1); border: none; border-radius: 8px; color: #fff; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+.gh-modal-close:hover { background: rgba(255,255,255,0.2); }
 
-  .badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-  .badge-pending .badge-dot   { background: var(--amber); }
-  .badge-selesai .badge-dot   { background: var(--green); }
-  .badge-terlambat .badge-dot { background: var(--red); animation: blink 1.2s ease-in-out infinite; }
+.gh-modal-body { padding: 24px 28px; display: flex; flex-direction: column; gap: 16px; }
 
-  @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
+.gh-info-box {
+  background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 12px 16px;
+  font-size: 13px; color: #1e40af; line-height: 1.6;
+}
+.gh-info-box strong { font-weight: 700; }
 
-  .card-desc { font-size: 13px; color: var(--muted); margin-bottom: 10px; line-height: 1.6; }
+.gh-form-group { display: flex; flex-direction: column; gap: 6px; }
+.gh-label { font-size: 13px; font-weight: 600; color: var(--navy); display: flex; align-items: center; gap: 6px; }
+.gh-label-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 100px; background: #fee2e2; color: #991b1b; letter-spacing: 0.5px; text-transform: uppercase; }
+.gh-label-optional { font-size: 10px; color: var(--muted); font-weight: 400; }
 
-  .card-meta { display: flex; flex-wrap: wrap; gap: 14px; }
+.gh-input {
+  padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+  font-family: inherit; font-size: 13px; color: var(--dark); outline: none;
+  background: var(--surface); transition: border-color 0.2s, box-shadow 0.2s; width: 100%;
+}
+.gh-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+.gh-input-hint { font-size: 11px; color: var(--muted); margin-top: 3px; }
 
-  .meta-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); font-weight: 500; }
-  .deadline-overdue { color: var(--red) !important; font-weight: 700 !important; }
+.gh-divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
 
-  .countdown-chip {
-    display: inline-flex; align-items: center; gap: 5px;
-    font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 100px; margin-left: 6px;
-  }
-  .chip-ok     { background: #d1fae5; color: #065f46; }
-  .chip-warn   { background: #fef3c7; color: #92400e; }
-  .chip-overdue{ background: #fee2e2; color: #991b1b; }
+.gh-status-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 10px; font-size: 13px; font-weight: 500; }
+.gh-status-idle    { background: #f8fafc; color: var(--muted); border: 1px solid var(--border); }
+.gh-status-loading { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.gh-status-success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+.gh-status-error   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 
-  /* action icon btns */
-  .action-btn {
-    width: 32px; height: 32px; border-radius: 8px;
-    border: 1px solid var(--border); background: var(--bg);
-    cursor: pointer; display: flex; align-items: center; justify-content: center;
-    font-size: 13px; transition: all 0.18s;
-  }
-  .action-btn:hover { background: #e2e8f0; transform: scale(1.1); }
-  .action-btn.delete:hover { background: #fee2e2; border-color: #fca5a5; }
+.gh-spinner { width: 16px; height: 16px; border: 2px solid #bfdbfe; border-top-color: #1d4ed8; border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── STATUS ROW ── */
-  .status-btn-row {
-    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-    padding: 12px 20px 14px 25px;
-    background: #f8fafc;
-    border-top: 1px solid var(--border);
-  }
+.gh-modal-footer { padding: 0 28px 24px; display: flex; gap: 12px; }
+.gh-btn-cancel { flex: 1; padding: 12px; border-radius: 10px; border: 1.5px solid var(--border); background: transparent; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--muted); transition: all 0.2s; }
+.gh-btn-cancel:hover { background: var(--bg); }
+.gh-btn-save { flex: 2; padding: 12px; border-radius: 10px; border: none; background: #24292f; color: #fff; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.gh-btn-save:hover:not(:disabled) { background: #32383e; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(36,41,47,0.35); }
+.gh-btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
 
-  .status-label-text {
-    font-size: 11px; font-weight: 700; color: var(--muted);
-    letter-spacing: 0.5px; text-transform: uppercase; margin-right: 4px; flex-shrink: 0;
-  }
+/* ── MODAL TAMBAH/EDIT ── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal { background: var(--surface); border-radius: 20px; width: 100%; max-width: 560px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); transform: translateY(20px) scale(0.97); transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1); max-height: 90vh; overflow-y: auto; }
+.modal-overlay.open .modal { transform: translateY(0) scale(1); }
+.modal-header { padding: 24px 28px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.modal-title { font-size: 18px; font-weight: 700; color: var(--dark); }
+.modal-close { width: 32px; height: 32px; border-radius: 8px; border: none; background: var(--bg); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+.modal-close:hover { background: #e2e8f0; }
+.modal-body { padding: 24px 28px; display: flex; flex-direction: column; gap: 18px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+label { font-size: 13px; font-weight: 600; color: var(--navy); }
+input[type="text"], input[type="date"], input[type="number"], textarea { padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 14px; color: var(--dark); outline: none; background: var(--surface); transition: border-color 0.2s, box-shadow 0.2s; width: 100%; }
+input:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+textarea { resize: vertical; min-height: 90px; }
+.modal-footer { padding: 16px 28px 24px; display: flex; gap: 12px; }
+.btn-batal { flex: 1; padding: 12px; border-radius: 10px; border: 1.5px solid var(--border); background: transparent; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--muted); transition: all 0.2s; }
+.btn-batal:hover { background: var(--bg); }
+.btn-submit { flex: 2; padding: 12px; border-radius: 10px; border: none; background: var(--dark); color: #fff; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+.btn-submit:hover { background: #1e3a5f; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(15,23,42,0.35); }
 
-  /* ── Indikator (non-clickable): Pending & Terlambat ── */
-  .status-indicator {
-    padding: 6px 14px; border-radius: 8px; border: 1.5px dashed transparent;
-    font-family: inherit; font-size: 12px; font-weight: 700;
-    display: flex; align-items: center; gap: 6px;
-    letter-spacing: 0.2px; cursor: default; user-select: none;
-    pointer-events: none;
-  }
+/* ── CONFIRM ── */
+.confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+.confirm-overlay.open { opacity: 1; pointer-events: all; }
+.confirm-box { background: var(--surface); border-radius: 16px; padding: 28px; max-width: 360px; width: 100%; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.25); }
+.confirm-icon  { font-size: 36px; margin-bottom: 12px; }
+.confirm-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+.confirm-sub   { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+.confirm-btns  { display: flex; gap: 12px; }
+.confirm-cancel { flex: 1; padding: 11px; border-radius: 10px; border: 1.5px solid var(--border); background: transparent; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; color: var(--muted); transition: background 0.2s; }
+.confirm-cancel:hover { background: var(--bg); }
+.confirm-delete { flex: 1; padding: 11px; border-radius: 10px; border: none; background: var(--red); color: #fff; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+.confirm-delete:hover { background: #dc2626; }
 
-  /* Pending indicator — shown active (current) */
-  .ind-pending-active {
-    background: var(--amber); color: #fff;
-    border-color: var(--amber-dark);
-    box-shadow: 0 4px 10px rgba(245,158,11,0.3);
-  }
+/* ── TOAST ── */
+.toast { position: fixed; bottom: 28px; right: 28px; background: var(--dark); color: #fff; padding: 14px 20px; border-radius: 12px; font-size: 14px; font-weight: 500; z-index: 999; transform: translateY(80px); opacity: 0; transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1); display: flex; align-items: center; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); max-width: 380px; }
+.toast.show { transform: translateY(0); opacity: 1; }
 
-  /* Pending indicator — shown inactive (not current status) */
-  .ind-pending-inactive {
-    background: #fef9ec; color: #b8860b;
-    border-color: #fde68a; opacity: 0.55;
-  }
-
-  /* Terlambat indicator — shown active */
-  .ind-terlambat-active {
-    background: var(--red); color: #fff;
-    border-color: var(--red-dark);
-    box-shadow: 0 4px 10px rgba(239,68,68,0.3);
-  }
-
-  /* Terlambat indicator — shown inactive */
-  .ind-terlambat-inactive {
-    background: #fff5f5; color: #c0392b;
-    border-color: #fecaca; opacity: 0.55;
-  }
-
-  /* ── Tombol Selesai — satu-satunya yang bisa diklik ── */
-  .sbtn-selesai {
-    padding: 6px 18px; border-radius: 8px; border: 2px solid #a7f3d0;
-    font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
-    transition: all 0.18s; display: flex; align-items: center; gap: 6px;
-    letter-spacing: 0.2px; background: #d1fae5; color: #065f46;
-  }
-  .sbtn-selesai:hover:not(.sbtn-active) {
-    background: #a7f3d0; border-color: var(--green);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(16,185,129,0.25);
-  }
-  .sbtn-selesai.sbtn-active {
-    background: var(--green); color: #fff; border-color: var(--green-dark);
-    box-shadow: 0 4px 12px rgba(16,185,129,0.4);
-    cursor: default;
-  }
-
-  /* ── MODAL ── */
-  .modal-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
-    z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px;
-    opacity: 0; pointer-events: none; transition: opacity 0.25s;
-  }
-  .modal-overlay.open { opacity: 1; pointer-events: all; }
-
-  .modal {
-    background: var(--surface); border-radius: 20px; width: 100%; max-width: 560px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-    transform: translateY(20px) scale(0.97);
-    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
-    max-height: 90vh; overflow-y: auto;
-  }
-  .modal-overlay.open .modal { transform: translateY(0) scale(1); }
-
-  .modal-header {
-    padding: 24px 28px 20px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .modal-title { font-size: 18px; font-weight: 700; color: var(--dark); }
-
-  .modal-close {
-    width: 32px; height: 32px; border-radius: 8px; border: none;
-    background: var(--bg); cursor: pointer; font-size: 16px;
-    display: flex; align-items: center; justify-content: center; transition: background 0.2s;
-  }
-  .modal-close:hover { background: #e2e8f0; }
-
-  .modal-body { padding: 24px 28px; display: flex; flex-direction: column; gap: 18px; }
-
-  .form-group { display: flex; flex-direction: column; gap: 6px; }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-
-  label { font-size: 13px; font-weight: 600; color: var(--navy); }
-
-  input[type="text"], input[type="date"], input[type="number"], textarea {
-    padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px;
-    font-family: inherit; font-size: 14px; color: var(--dark);
-    outline: none; background: var(--surface);
-    transition: border-color 0.2s, box-shadow 0.2s; width: 100%;
-  }
-  input:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
-  textarea { resize: vertical; min-height: 90px; }
-
-  .modal-footer { padding: 16px 28px 24px; display: flex; gap: 12px; }
-
-  .btn-batal {
-    flex: 1; padding: 12px; border-radius: 10px; border: 1.5px solid var(--border);
-    background: transparent; font-family: inherit; font-size: 14px; font-weight: 600;
-    cursor: pointer; color: var(--muted); transition: all 0.2s;
-  }
-  .btn-batal:hover { background: var(--bg); }
-
-  .btn-submit {
-    flex: 2; padding: 12px; border-radius: 10px; border: none;
-    background: var(--dark); color: #fff; font-family: inherit; font-size: 14px;
-    font-weight: 700; cursor: pointer; transition: all 0.2s;
-  }
-  .btn-submit:hover { background: #1e3a5f; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(15,23,42,0.35); }
-
-  /* ── CONFIRM ── */
-  .confirm-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300;
-    display: flex; align-items: center; justify-content: center; padding: 20px;
-    opacity: 0; pointer-events: none; transition: opacity 0.2s;
-  }
-  .confirm-overlay.open { opacity: 1; pointer-events: all; }
-
-  .confirm-box {
-    background: var(--surface); border-radius: 16px; padding: 28px;
-    max-width: 360px; width: 100%; text-align: center;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
-  }
-  .confirm-icon  { font-size: 36px; margin-bottom: 12px; }
-  .confirm-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
-  .confirm-sub   { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
-  .confirm-btns  { display: flex; gap: 12px; }
-
-  .confirm-cancel {
-    flex: 1; padding: 11px; border-radius: 10px; border: 1.5px solid var(--border);
-    background: transparent; font-family: inherit; font-size: 14px; font-weight: 600;
-    cursor: pointer; color: var(--muted); transition: background 0.2s;
-  }
-  .confirm-cancel:hover { background: var(--bg); }
-
-  .confirm-delete {
-    flex: 1; padding: 11px; border-radius: 10px; border: none;
-    background: var(--red); color: #fff; font-family: inherit; font-size: 14px;
-    font-weight: 700; cursor: pointer; transition: all 0.2s;
-  }
-  .confirm-delete:hover { background: #dc2626; }
-
-  /* ── TOAST ── */
-  .toast {
-    position: fixed; bottom: 28px; right: 28px;
-    background: var(--dark); color: #fff; padding: 14px 20px; border-radius: 12px;
-    font-size: 14px; font-weight: 500; z-index: 999;
-    transform: translateY(80px); opacity: 0;
-    transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
-    display: flex; align-items: center; gap: 10px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-  }
-  .toast.show { transform: translateY(0); opacity: 1; }
-
-  @media (max-width: 768px) {
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
-    .header { padding: 0 16px; }
-    .main { padding: 20px 16px; }
-    .form-row { grid-template-columns: 1fr; }
-  }
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .header { padding: 0 16px; }
+  .main { padding: 20px 16px; }
+  .form-row { grid-template-columns: 1fr; }
+  .header-title-text { display: none; }
+}
 </style>
 </head>
 <body>
 
+<!-- HEADER -->
 <header class="header">
   <div class="header-left">
     <div class="header-icon">📋</div>
@@ -402,27 +308,24 @@
       <div class="header-date" id="headerDate"></div>
     </div>
   </div>
-  <button class="btn-tambah" onclick="openModal()">＋ Tambah</button>
+  <div class="header-right">
+    <button class="btn-github" onclick="openGithubModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+      </svg>
+      Simpan ke GitHub
+    </button>
+    <button class="btn-tambah" onclick="openModal()">＋ Tambah</button>
+  </div>
 </header>
 
+<!-- MAIN -->
 <div class="main">
   <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-icon-wrap stat-icon-total">📄</div>
-      <div><div class="stat-num" id="statTotal">0</div><div class="stat-label">Total</div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon-wrap stat-icon-selesai">✅</div>
-      <div><div class="stat-num" id="statSelesai">0</div><div class="stat-label">Selesai</div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon-wrap stat-icon-pending">🕐</div>
-      <div><div class="stat-num" id="statPending">0</div><div class="stat-label">Pending</div></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-icon-wrap stat-icon-terlambat">⚠️</div>
-      <div><div class="stat-num" id="statTerlambat">0</div><div class="stat-label">Terlambat</div></div>
-    </div>
+    <div class="stat-card"><div class="stat-icon-wrap stat-icon-total">📄</div><div><div class="stat-num" id="statTotal">0</div><div class="stat-label">Total</div></div></div>
+    <div class="stat-card"><div class="stat-icon-wrap stat-icon-selesai">✅</div><div><div class="stat-num" id="statSelesai">0</div><div class="stat-label">Selesai</div></div></div>
+    <div class="stat-card"><div class="stat-icon-wrap stat-icon-pending">🕐</div><div><div class="stat-num" id="statPending">0</div><div class="stat-label">Pending</div></div></div>
+    <div class="stat-card"><div class="stat-icon-wrap stat-icon-terlambat">⚠️</div><div><div class="stat-num" id="statTerlambat">0</div><div class="stat-label">Terlambat</div></div></div>
   </div>
 
   <div class="filter-row">
@@ -444,7 +347,77 @@
   <div class="list-wrap" id="listWrap"></div>
 </div>
 
-<!-- MODAL -->
+<!-- GITHUB MODAL -->
+<div class="gh-modal-overlay" id="ghModalOverlay">
+  <div class="gh-modal">
+    <div class="gh-modal-head">
+      <div class="gh-modal-head-left">
+        <div class="gh-modal-head-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="gh-modal-head-title">Simpan ke GitHub</div>
+          <div class="gh-modal-head-sub">Upload data.json ke repository Anda</div>
+        </div>
+      </div>
+      <button class="gh-modal-close" onclick="closeGithubModal()">✕</button>
+    </div>
+
+    <div class="gh-modal-body">
+      <div class="gh-info-box">
+        💡 <strong>Cara mendapatkan Token:</strong> Buka GitHub → Settings → Developer Settings → Personal Access Tokens → Tokens (classic) → Generate new token. Centang scope <strong>repo</strong>. Token hanya ditampilkan sekali, simpan baik-baik.
+      </div>
+
+      <div class="gh-form-group">
+        <label class="gh-label">
+          GitHub Personal Access Token
+          <span class="gh-label-badge">Wajib</span>
+        </label>
+        <input class="gh-input" type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+        <div class="gh-input-hint">🔒 Token tidak disimpan, hanya dipakai sekali untuk upload</div>
+      </div>
+
+      <div class="gh-form-group">
+        <label class="gh-label">Username GitHub <span class="gh-label-badge">Wajib</span></label>
+        <input class="gh-input" type="text" id="ghOwner" placeholder="username-anda">
+      </div>
+
+      <div class="gh-form-group">
+        <label class="gh-label">Nama Repository <span class="gh-label-badge">Wajib</span></label>
+        <input class="gh-input" type="text" id="ghRepo" placeholder="nama-repo">
+      </div>
+
+      <div class="gh-form-group">
+        <label class="gh-label">Path File <span class="gh-label-optional">(opsional, default: data.json)</span></label>
+        <input class="gh-input" type="text" id="ghPath" placeholder="data/laporan-kerja.json" value="data.json">
+      </div>
+
+      <div class="gh-form-group">
+        <label class="gh-label">Pesan Commit <span class="gh-label-optional">(opsional)</span></label>
+        <input class="gh-input" type="text" id="ghMessage" placeholder="Update laporan kerja">
+      </div>
+
+      <hr class="gh-divider">
+
+      <div class="gh-status-row gh-status-idle" id="ghStatusRow">
+        <span id="ghStatusIcon">📁</span>
+        <span id="ghStatusText">Siap menyimpan — isi form lalu klik Simpan</span>
+      </div>
+    </div>
+
+    <div class="gh-modal-footer">
+      <button class="gh-btn-cancel" onclick="closeGithubModal()">Batal</button>
+      <button class="gh-btn-save" id="ghSaveBtn" onclick="saveToGithub()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        Simpan ke GitHub
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL TAMBAH/EDIT -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <div class="modal-header">
@@ -452,37 +425,16 @@
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
-      <div class="form-group">
-        <label>Judul Pekerjaan *</label>
-        <input type="text" id="fJudul" placeholder="Masukkan judul pekerjaan">
-      </div>
-      <div class="form-group">
-        <label>Deskripsi</label>
-        <textarea id="fDeskripsi" placeholder="Masukkan deskripsi pekerjaan"></textarea>
-      </div>
-      <div class="form-group">
-        <label>Deadline</label>
-        <input type="date" id="fDeadline">
+      <div class="form-group"><label>Judul Pekerjaan *</label><input type="text" id="fJudul" placeholder="Masukkan judul pekerjaan"></div>
+      <div class="form-group"><label>Deskripsi</label><textarea id="fDeskripsi" placeholder="Masukkan deskripsi pekerjaan"></textarea></div>
+      <div class="form-group"><label>Deadline</label><input type="date" id="fDeadline"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Unit</label><input type="text" id="fUnit" placeholder="Unit kerja"></div>
+        <div class="form-group"><label>Alamat</label><input type="text" id="fAlamat" placeholder="Alamat lokasi"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label>Unit</label>
-          <input type="text" id="fUnit" placeholder="Unit kerja">
-        </div>
-        <div class="form-group">
-          <label>Alamat</label>
-          <input type="text" id="fAlamat" placeholder="Alamat lokasi">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Jumlah Kendaraan</label>
-          <input type="number" id="fKendaraan" value="0" min="0">
-        </div>
-        <div class="form-group">
-          <label>Jumlah Personel</label>
-          <input type="number" id="fPersonel" value="0" min="0">
-        </div>
+        <div class="form-group"><label>Jumlah Kendaraan</label><input type="number" id="fKendaraan" value="0" min="0"></div>
+        <div class="form-group"><label>Jumlah Personel</label><input type="number" id="fPersonel" value="0" min="0"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -527,7 +479,6 @@
 
   function persist() { localStorage.setItem('laporanKerja', JSON.stringify(data)); }
 
-  // Auto-mark terlambat: pending items whose deadline has passed
   function checkAutoTerlambat() {
     const today = todayStr();
     let changed = 0;
@@ -550,10 +501,14 @@
   function init() {
     const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
     document.getElementById('headerDate').textContent = new Date().toLocaleDateString('id-ID', opts);
+    // Restore saved GitHub config (owner, repo, path only — never token)
+    const cfg = JSON.parse(localStorage.getItem('ghConfig') || '{}');
+    if (cfg.owner) document.getElementById('ghOwner').value = cfg.owner;
+    if (cfg.repo)  document.getElementById('ghRepo').value  = cfg.repo;
+    if (cfg.path)  document.getElementById('ghPath').value  = cfg.path;
     checkAutoTerlambat();
     updateStats();
     renderList();
-    // Re-check every minute for live deadline tracking
     setInterval(() => { checkAutoTerlambat(); updateStats(); renderList(); }, 60000);
   }
 
@@ -593,7 +548,6 @@
     );
 
     const wrap = document.getElementById('listWrap');
-
     if (!list.length) {
       wrap.innerHTML = `<div class="empty-state">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
@@ -608,24 +562,45 @@
     }
 
     wrap.innerHTML = list.map(d => {
-      const days = daysUntil(d.deadline);
+      const days  = daysUntil(d.deadline);
       const dlStr = d.deadline
         ? new Date(d.deadline).toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'})
         : null;
 
       let chip = '';
       if (d.deadline && d.status !== 'selesai') {
-        if (days < 0)      chip = `<span class="countdown-chip chip-overdue">⚠ Lewat ${Math.abs(days)} hari</span>`;
-        else if (days===0) chip = `<span class="countdown-chip chip-warn">⏰ Hari ini!</span>`;
-        else if (days<=3)  chip = `<span class="countdown-chip chip-warn">⏰ ${days} hari lagi</span>`;
-        else               chip = `<span class="countdown-chip chip-ok">✓ ${days} hari lagi</span>`;
+        if      (days < 0)  chip = `<span class="countdown-chip chip-overdue">⚠ Lewat ${Math.abs(days)} hari</span>`;
+        else if (days === 0) chip = `<span class="countdown-chip chip-warn">⏰ Hari ini!</span>`;
+        else if (days <= 3) chip = `<span class="countdown-chip chip-warn">⏰ ${days} hari lagi</span>`;
+        else                chip = `<span class="countdown-chip chip-ok">✓ ${days} hari lagi</span>`;
       }
 
-      const dlClass = (days!==null && days<0 && d.status!=='selesai') ? 'deadline-overdue' : '';
+      const dlClass     = (days !== null && days < 0 && d.status !== 'selesai') ? 'deadline-overdue' : '';
       const statusLabel = {pending:'Pending', selesai:'Selesai', terlambat:'Terlambat'}[d.status];
 
+      // Selesai button logic:
+      // - terlambat → disabled with tooltip
+      // - selesai   → active (already done), no click
+      // - pending   → clickable
+      const isTerlambat = d.status === 'terlambat';
+      const isSelesai   = d.status === 'selesai';
+
+      let selesaiBtn = '';
+      if (isTerlambat) {
+        // Disabled with tooltip
+        selesaiBtn = `
+          <div class="disabled-tooltip-wrap">
+            <button class="sbtn-selesai sbtn-disabled" disabled>🚫 Selesai</button>
+            <div class="tooltip">Tidak bisa — deadline sudah lewat</div>
+          </div>`;
+      } else if (isSelesai) {
+        selesaiBtn = `<button class="sbtn-selesai sbtn-active" disabled>✅ Selesai</button>`;
+      } else {
+        selesaiBtn = `<button class="sbtn-selesai" onclick="changeStatus('${d.id}','selesai')">✅ Selesai</button>`;
+      }
+
       return `
-      <div class="pekerjaan-card ${d.status==='terlambat' ? 'card-terlambat' : ''}" id="card-${d.id}">
+      <div class="pekerjaan-card ${isTerlambat ? 'card-terlambat' : ''}" id="card-${d.id}">
         <div class="card-inner">
           <div class="card-accent accent-${d.status}"></div>
           <div class="card-content">
@@ -641,51 +616,37 @@
             </div>
             ${d.deskripsi ? `<div class="card-desc">${escHtml(d.deskripsi)}</div>` : ''}
             <div class="card-meta">
-              ${dlStr    ? `<div class="meta-item ${dlClass}">📅 ${dlStr}${chip}</div>` : ''}
-              ${d.unit   ? `<div class="meta-item">🏢 ${escHtml(d.unit)}</div>` : ''}
-              ${d.alamat ? `<div class="meta-item">📍 ${escHtml(d.alamat)}</div>` : ''}
-              ${d.kendaraan>0 ? `<div class="meta-item">🚗 ${d.kendaraan} kendaraan</div>` : ''}
-              ${d.personel >0 ? `<div class="meta-item">👥 ${d.personel} personel</div>` : ''}
+              ${dlStr     ? `<div class="meta-item ${dlClass}">📅 ${dlStr}${chip}</div>` : ''}
+              ${d.unit    ? `<div class="meta-item">🏢 ${escHtml(d.unit)}</div>` : ''}
+              ${d.alamat  ? `<div class="meta-item">📍 ${escHtml(d.alamat)}</div>` : ''}
+              ${d.kendaraan > 0 ? `<div class="meta-item">🚗 ${d.kendaraan} kendaraan</div>` : ''}
+              ${d.personel  > 0 ? `<div class="meta-item">👥 ${d.personel} personel</div>` : ''}
             </div>
           </div>
         </div>
-
         <div class="status-btn-row">
           <span class="status-label-text">Status:</span>
-
-          <!-- Pending: indikator saja, tidak bisa diklik -->
-          <span class="status-indicator ${d.status==='pending' ? 'ind-pending-active' : 'ind-pending-inactive'}">
-            🕐 Pending
-          </span>
-
-          <!-- Selesai: SATU-SATUNYA tombol yang bisa diklik -->
-          <button
-            class="sbtn-selesai ${d.status==='selesai' ? 'sbtn-active' : ''}"
-            onclick="${d.status!=='selesai' ? `changeStatus('${d.id}','selesai')` : ''}"
-            title="${d.status==='selesai' ? 'Sudah selesai' : 'Tandai selesai'}"
-          >✅ Selesai</button>
-
-          <!-- Terlambat: indikator saja, tidak bisa diklik -->
-          <span class="status-indicator ${d.status==='terlambat' ? 'ind-terlambat-active' : 'ind-terlambat-inactive'}">
-            ⚠️ Terlambat
-          </span>
+          <span class="status-indicator ${d.status==='pending' ? 'ind-pending-active' : 'ind-pending-inactive'}">🕐 Pending</span>
+          ${selesaiBtn}
+          <span class="status-indicator ${isTerlambat ? 'ind-terlambat-active' : 'ind-terlambat-inactive'}">⚠️ Terlambat</span>
         </div>
       </div>`;
     }).join('');
   }
 
-  // Only 'selesai' is allowed from button click — pending/terlambat are set automatically
+  // Only selesai allowed; terlambat items are blocked
   function changeStatus(id, newStatus) {
     if (newStatus !== 'selesai') return;
     const d = data.find(x => x.id === id);
-    if (!d || d.status === newStatus) return;
-    d.status = newStatus;
+    if (!d || d.status === 'terlambat' || d.status === 'selesai') return;
+    d.status = 'selesai';
     persist();
     updateStats();
     renderList();
     showToast('✅ Pekerjaan ditandai Selesai!');
   }
 
+  // ── MODAL TAMBAH/EDIT ──
   function openModal() {
     editingId = null;
     document.getElementById('modalTitle').textContent = 'Tambah Pekerjaan Baru';
@@ -726,7 +687,6 @@
       setTimeout(() => el.style.borderColor = '', 1500);
       return;
     }
-
     const deadline = document.getElementById('fDeadline').value;
     const entry = {
       judul,
@@ -737,18 +697,15 @@
       kendaraan: parseInt(document.getElementById('fKendaraan').value) || 0,
       personel:  parseInt(document.getElementById('fPersonel').value)  || 0,
     };
-
     if (editingId) {
       const idx = data.findIndex(x => x.id === editingId);
       if (idx !== -1) {
         let st = data[idx].status;
-        // if deadline was updated to past and status is pending => auto terlambat
         if (st === 'pending' && deadline && deadline < todayStr()) st = 'terlambat';
         data[idx] = { ...data[idx], ...entry, status: st };
       }
       showToast('✅ Pekerjaan diperbarui');
     } else {
-      // auto-set status on create
       let st = 'pending';
       if (deadline && deadline < todayStr()) st = 'terlambat';
       entry.id = 'pk_' + Date.now();
@@ -758,30 +715,123 @@
       if (st === 'terlambat') showToast('⚠️ Ditambahkan — deadline sudah lewat (Terlambat)');
       else showToast('✅ Pekerjaan berhasil ditambahkan');
     }
-
-    persist();
-    updateStats();
-    renderList();
-    closeModal();
+    persist(); updateStats(); renderList(); closeModal();
   }
 
+  // ── DELETE ──
   function openConfirm(id)  { deletingId = id; document.getElementById('confirmOverlay').classList.add('open'); }
   function closeConfirm()   { deletingId = null; document.getElementById('confirmOverlay').classList.remove('open'); }
-
-  function confirmDelete() {
+  function confirmDelete()  {
     data = data.filter(x => x.id !== deletingId);
     persist(); updateStats(); renderList(); closeConfirm();
     showToast('🗑️ Pekerjaan dihapus');
   }
 
+  // ── GITHUB MODAL ──
+  function openGithubModal() {
+    setGhStatus('idle', '📁', 'Siap menyimpan — isi form lalu klik Simpan');
+    document.getElementById('ghModalOverlay').classList.add('open');
+  }
+  function closeGithubModal() { document.getElementById('ghModalOverlay').classList.remove('open'); }
+
+  function setGhStatus(type, icon, text) {
+    const row = document.getElementById('ghStatusRow');
+    row.className = 'gh-status-row gh-status-' + type;
+    document.getElementById('ghStatusIcon').textContent = icon;
+    document.getElementById('ghStatusText').textContent = text;
+  }
+
+  async function saveToGithub() {
+    const token   = document.getElementById('ghToken').value.trim();
+    const owner   = document.getElementById('ghOwner').value.trim();
+    const repo    = document.getElementById('ghRepo').value.trim();
+    const path    = document.getElementById('ghPath').value.trim() || 'data.json';
+    const message = document.getElementById('ghMessage').value.trim() || `Update laporan kerja — ${new Date().toLocaleString('id-ID')}`;
+
+    if (!token)  { setGhStatus('error','❌','Token GitHub wajib diisi'); return; }
+    if (!owner)  { setGhStatus('error','❌','Username GitHub wajib diisi'); return; }
+    if (!repo)   { setGhStatus('error','❌','Nama repository wajib diisi'); return; }
+
+    // Save non-sensitive config for next session
+    localStorage.setItem('ghConfig', JSON.stringify({ owner, repo, path }));
+
+    const btn = document.getElementById('ghSaveBtn');
+    btn.disabled = true;
+    btn.innerHTML = `<div class="gh-spinner"></div> Menyimpan...`;
+
+    // Build status row with spinner
+    const statusRow = document.getElementById('ghStatusRow');
+    statusRow.className = 'gh-status-row gh-status-loading';
+    document.getElementById('ghStatusIcon').innerHTML = '<div class="gh-spinner"></div>';
+    document.getElementById('ghStatusText').textContent = 'Menghubungi GitHub API...';
+
+    try {
+      const apiBase = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+      const headers = {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+      };
+
+      // Step 1: Check if file already exists (need SHA for update)
+      setGhStatus('loading','⏳','Memeriksa file yang ada...');
+      let sha = null;
+      try {
+        const checkRes = await fetch(apiBase, { headers });
+        if (checkRes.ok) {
+          const existing = await checkRes.json();
+          sha = existing.sha;
+        }
+      } catch (_) { /* file doesn't exist yet, that's fine */ }
+
+      // Step 2: Encode data as base64
+      const jsonContent = JSON.stringify(data, null, 2);
+      const encoded = btoa(unescape(encodeURIComponent(jsonContent)));
+
+      const body = { message, content: encoded };
+      if (sha) body.sha = sha;
+
+      // Step 3: PUT to GitHub
+      setGhStatus('loading','⬆️','Mengupload data.json...');
+      const putRes = await fetch(apiBase, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(body),
+      });
+
+      if (putRes.ok) {
+        const result = await putRes.json();
+        const fileUrl = result.content?.html_url || `https://github.com/${owner}/${repo}/blob/main/${path}`;
+        setGhStatus('success', '✅', `Berhasil disimpan! ${sha ? 'File diperbarui' : 'File baru dibuat'} → ${path}`);
+        showToast(`✅ data.json berhasil disimpan ke GitHub!`);
+        // Clear token for security
+        document.getElementById('ghToken').value = '';
+      } else {
+        const err = await putRes.json();
+        const msg = err.message || `HTTP ${putRes.status}`;
+        if (putRes.status === 401) setGhStatus('error','❌','Token tidak valid atau sudah kadaluarsa');
+        else if (putRes.status === 404) setGhStatus('error','❌','Repository tidak ditemukan atau tidak ada akses');
+        else if (putRes.status === 422) setGhStatus('error','❌','SHA tidak cocok — coba lagi');
+        else setGhStatus('error','❌',`Gagal: ${msg}`);
+      }
+    } catch (e) {
+      setGhStatus('error', '❌', `Koneksi gagal: ${e.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg> Simpan ke GitHub`;
+    }
+  }
+
+  // ── TOAST ──
   function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg; t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2800);
+    setTimeout(() => t.classList.remove('show'), 3200);
   }
 
-  document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target===document.getElementById('modalOverlay')) closeModal(); });
-  document.getElementById('confirmOverlay').addEventListener('click', e => { if (e.target===document.getElementById('confirmOverlay')) closeConfirm(); });
+  document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target === document.getElementById('modalOverlay')) closeModal(); });
+  document.getElementById('confirmOverlay').addEventListener('click', e => { if (e.target === document.getElementById('confirmOverlay')) closeConfirm(); });
+  document.getElementById('ghModalOverlay').addEventListener('click', e => { if (e.target === document.getElementById('ghModalOverlay')) closeGithubModal(); });
 
   init();
 </script>
