@@ -1,1658 +1,789 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Laporan Kerja - Aplikasi Manajemen Tugas</title>
-  <meta name="description" content="Aplikasi laporan kerja untuk mengelola dan melacak pekerjaan dengan fitur deadline, status selesai, dan laporan terlambat">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    :root {
-      --background: #f5f7fa;
-      --foreground: #1a2332;
-      --card: #ffffff;
-      --card-foreground: #1a2332;
-      --primary: #3b82f6;
-      --primary-foreground: #ffffff;
-      --secondary: #e8ecf1;
-      --muted: #6b7280;
-      --border: #dce1e8;
-      --success: #22c55e;
-      --success-bg: rgba(34, 197, 94, 0.1);
-      --warning: #f59e0b;
-      --warning-bg: rgba(245, 158, 11, 0.1);
-      --destructive: #ef4444;
-      --destructive-bg: rgba(239, 68, 68, 0.1);
-      --radius: 12px;
-    }
-
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: var(--background);
-      color: var(--foreground);
-      line-height: 1.6;
-    }
-
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 0 16px;
-    }
-
-    /* Header */
-    header {
-      background: var(--card);
-      border-bottom: 1px solid var(--border);
-      padding: 24px 0;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .header-content {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      position: relative;
-    }
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .header-icon {
-      background: var(--primary);
-      color: var(--primary-foreground);
-      padding: 12px;
-      border-radius: var(--radius);
-    }
-
-    .header-icon svg {
-      width: 32px;
-      height: 32px;
-    }
-
-    .header-title h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-    }
-
-    .header-title p {
-      color: var(--muted);
-      font-size: 0.875rem;
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    /* Buttons */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 20px;
-      border: none;
-      border-radius: var(--radius);
-      font-size: 0.875rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .btn-primary {
-      background: var(--primary);
-      color: var(--primary-foreground);
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
-    }
-
-    .btn-outline {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--foreground);
-    }
-
-    .btn-outline:hover {
-      background: var(--secondary);
-    }
-
-    .btn-success {
-      background: var(--success);
-      color: white;
-    }
-
-    .btn-danger {
-      background: var(--destructive);
-      color: white;
-      padding: 8px;
-    }
-
-    .btn-ghost {
-      background: transparent;
-      padding: 8px;
-    }
-
-    .btn-sm {
-      padding: 8px 16px;
-      font-size: 0.8rem;
-    }
-
-    /* Main Content */
-    main {
-      padding: 32px 0;
-    }
-
-    section {
-      margin-bottom: 32px;
-    }
-
-    section h2 {
-      font-size: 1.125rem;
-      font-weight: 600;
-      margin-bottom: 16px;
-    }
-
-    /* Stats Grid */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-    }
-
-    @media (min-width: 768px) {
-      .stats-grid {
-        grid-template-columns: repeat(4, 1fr);
-      }
-    }
-
-    .stat-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .stat-icon {
-      padding: 12px;
-      border-radius: var(--radius);
-    }
-
-    .stat-icon.total { background: rgba(59, 130, 246, 0.1); color: var(--primary); }
-    .stat-icon.completed { background: var(--success-bg); color: var(--success); }
-    .stat-icon.late { background: var(--destructive-bg); color: var(--destructive); }
-    .stat-icon.pending { background: var(--warning-bg); color: var(--warning); }
-
-    .stat-value {
-      font-size: 1.5rem;
-      font-weight: 700;
-    }
-
-    .stat-label {
-      font-size: 0.875rem;
-      color: var(--muted);
-    }
-
-    /* Loading */
-    .loading {
-      text-align: center;
-      padding: 32px;
-      color: var(--muted);
-    }
-
-    .spinner {
-      border: 3px solid var(--border);
-      border-top: 3px solid var(--primary);
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 16px;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    /* Filter */
-    .filter-header {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .filter-buttons {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .filter-btn {
-      padding: 8px 16px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: transparent;
-      font-size: 0.8rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .filter-btn:hover {
-      background: var(--secondary);
-    }
-
-    .filter-btn.active {
-      background: var(--primary);
-      color: white;
-      border-color: var(--primary);
-    }
-
-    /* Task Card */
-    .task-list {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .task-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      border-left: 4px solid;
-      overflow: hidden;
-      transition: box-shadow 0.2s;
-    }
-
-    .task-card:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    }
-
-    .task-card.completed {
-      border-left-color: var(--success);
-      background: linear-gradient(to right, var(--success-bg), var(--card));
-    }
-
-    .task-card.late {
-      border-left-color: var(--destructive);
-      background: linear-gradient(to right, var(--destructive-bg), var(--card));
-    }
-
-    .task-card.pending {
-      border-left-color: var(--warning);
-      background: linear-gradient(to right, var(--warning-bg), var(--card));
-    }
-
-    .task-header {
-      padding: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-    }
-
-    .task-header-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .task-status-icon {
-      padding: 8px;
-      border-radius: 50%;
-    }
-
-    .task-status-icon.completed { background: var(--success-bg); color: var(--success); }
-    .task-status-icon.late { background: var(--destructive-bg); color: var(--destructive); }
-    .task-status-icon.pending { background: var(--warning-bg); color: var(--warning); }
-
-    .task-title {
-      font-weight: 600;
-      font-size: 1.1rem;
-    }
-
-    .task-card.completed .task-title {
-      text-decoration: line-through;
-      color: var(--muted);
-    }
-
-    .task-deadline {
-      font-size: 0.875rem;
-      color: var(--muted);
-    }
-
-    .task-header-right {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .badge {
-      padding: 4px 12px;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    .badge.completed { background: var(--success); color: white; }
-    .badge.late { background: var(--destructive); color: white; }
-    .badge.pending { background: var(--warning); color: white; }
-
-    .task-content {
-      display: none;
-      padding: 0 16px 16px;
-      animation: slideDown 0.2s ease;
-    }
-
-    .task-content.show {
-      display: block;
-    }
-
-    @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .task-description {
-      background: var(--secondary);
-      padding: 16px;
-      border-radius: var(--radius);
-      margin-bottom: 16px;
-    }
-
-    .task-description h4 {
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-
-    .task-description p {
-      color: var(--muted);
-    }
-
-    .task-meta {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-      font-size: 0.875rem;
-      margin-bottom: 16px;
-    }
-
-    @media (min-width: 768px) {
-      .task-meta {
-        grid-template-columns: repeat(3, 1fr);
-      }
-    }
-
-    .task-meta span {
-      color: var(--muted);
-    }
-
-    .task-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .task-actions .btn {
-      flex: 1;
-    }
-
-    /* Empty State */
-    .empty-state {
-      text-align: center;
-      padding: 64px 16px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-    }
-
-    .empty-state svg {
-      width: 64px;
-      height: 64px;
-      color: var(--muted);
-      margin-bottom: 16px;
-    }
-
-    .empty-state h3 {
-      font-size: 1.25rem;
-      margin-bottom: 8px;
-    }
-
-    .empty-state p {
-      color: var(--muted);
-    }
-
-    /* Modal */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      overflow-y: auto;
-    }
-
-    .modal-overlay.show {
-      display: flex;
-    }
-
-    .modal {
-      background: var(--card);
-      border-radius: var(--radius);
-      width: 100%;
-      max-width: 500px;
-      padding: 24px;
-      animation: modalIn 0.2s ease;
-      max-height: 90vh;
-      overflow-y: auto;
-    }
-
-    @keyframes modalIn {
-      from { opacity: 0; transform: scale(0.95); }
-      to { opacity: 1; transform: scale(1); }
-    }
-
-    .modal h2 {
-      font-size: 1.25rem;
-      margin-bottom: 20px;
-    }
-
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    .form-group label {
-      display: block;
-      font-weight: 500;
-      margin-bottom: 6px;
-      font-size: 0.875rem;
-    }
-
-    .form-group input,
-    .form-group textarea {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      font-size: 0.875rem;
-      font-family: inherit;
-      transition: border-color 0.2s;
-    }
-
-    .form-group input:focus,
-    .form-group textarea:focus {
-      outline: none;
-      border-color: var(--primary);
-    }
-
-    .form-group textarea {
-      resize: vertical;
-      min-height: 80px;
-    }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    .modal-actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 24px;
-    }
-
-    .modal-actions .btn {
-      flex: 1;
-    }
-
-    /* Toast */
-    .toast-container {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      z-index: 2000;
-    }
-
-    .toast {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px;
-      margin-top: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      animation: toastIn 0.3s ease;
-      min-width: 280px;
-    }
-
-    .toast.success { border-left: 4px solid var(--success); }
-    .toast.error { border-left: 4px solid var(--destructive); }
-
-    .toast-title {
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-
-    .toast-message {
-      font-size: 0.875rem;
-      color: var(--muted);
-    }
-
-    @keyframes toastIn {
-      from { opacity: 0; transform: translateX(100%); }
-      to { opacity: 1; transform: translateX(0); }
-    }
-
-    /* Settings Dropdown */
-    .settings-dropdown {
-      position: absolute;
-      top: 100%;
-      right: 0;
-      margin-top: 8px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      min-width: 220px;
-      z-index: 1000;
-    }
-
-    .settings-dropdown button {
-      width: 100%;
-      padding: 12px 16px;
-      border: none;
-      background: transparent;
-      text-align: left;
-      font-size: 0.875rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      transition: background 0.2s;
-      color: var(--foreground);
-    }
-
-    .settings-dropdown button:hover {
-      background: var(--secondary);
-    }
-
-    .settings-dropdown button:first-child {
-      border-radius: var(--radius) var(--radius) 0 0;
-    }
-
-    .settings-dropdown button:last-child {
-      border-radius: 0 0 var(--radius) var(--radius);
-    }
-
-    /* SVG Icons */
-    .icon {
-      width: 20px;
-      height: 20px;
-    }
-
-    .icon-sm {
-      width: 16px;
-      height: 16px;
-    }
-
-    .icon-lg {
-      width: 24px;
-      height: 24px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laporan Kerja</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f0f2f7;
+    --surface: #ffffff;
+    --dark: #0f172a;
+    --navy: #1e293b;
+    --blue: #3b82f6;
+    --green: #10b981;
+    --green-dark: #059669;
+    --amber: #f59e0b;
+    --amber-dark: #d97706;
+    --red: #ef4444;
+    --red-dark: #dc2626;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.13);
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    color: var(--dark);
+    min-height: 100vh;
+  }
+
+  .header {
+    background: var(--dark);
+    padding: 0 32px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+  }
+
+  .header-left { display: flex; align-items: center; gap: 14px; }
+
+  .header-icon {
+    width: 40px; height: 40px;
+    background: rgba(59,130,246,0.2);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .header-title { font-size: 20px; font-weight: 700; color: #fff; }
+  .header-date  { font-size: 13px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+
+  .btn-tambah {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); color: var(--dark);
+    border: none; padding: 10px 22px; border-radius: 10px;
+    font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+    transition: all 0.2s;
+  }
+  .btn-tambah:hover { background: #f1f5f9; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+  .main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 16px; margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--surface); border-radius: 16px; padding: 20px 22px;
+    display: flex; align-items: center; gap: 16px;
+    box-shadow: var(--shadow); border: 1px solid var(--border); transition: transform 0.2s;
+  }
+  .stat-card:hover { transform: translateY(-2px); }
+
+  .stat-icon-wrap {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .stat-icon-total    { background: #f1f5f9; }
+  .stat-icon-selesai  { background: #d1fae5; }
+  .stat-icon-pending  { background: #fef3c7; }
+  .stat-icon-terlambat{ background: #fee2e2; }
+
+  .stat-num   { font-size: 28px; font-weight: 800; line-height: 1; color: var(--dark); }
+  .stat-label { font-size: 12px; color: var(--muted); font-weight: 500; margin-top: 3px; }
+
+  .filter-row { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+
+  .filter-btn {
+    padding: 9px 20px; border-radius: 100px;
+    border: 1px solid var(--border); font-family: inherit;
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; background: var(--surface); color: var(--muted);
+  }
+  .filter-btn:hover { border-color: var(--blue); color: var(--blue); }
+  .filter-btn.active { background: var(--dark); color: #fff; border-color: var(--dark); }
+
+  .search-wrap { position: relative; margin-bottom: 20px; }
+  .search-wrap input {
+    width: 100%; padding: 12px 16px 12px 44px;
+    border: 1px solid var(--border); border-radius: 12px;
+    font-family: inherit; font-size: 14px;
+    background: var(--surface); color: var(--dark);
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-wrap input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+  .search-icon {
+    position: absolute; left: 14px; top: 50%;
+    transform: translateY(-50%); color: var(--muted); font-size: 16px;
+  }
+
+  .auto-notice {
+    display: flex; align-items: center; gap: 10px;
+    background: #fff7ed; border: 1px solid #fed7aa;
+    border-radius: 10px; padding: 10px 16px;
+    font-size: 13px; color: #9a3412; font-weight: 500;
+    margin-bottom: 20px;
+    animation: slideIn 0.3s ease;
+  }
+
+  .list-wrap { display: flex; flex-direction: column; gap: 12px; }
+
+  .empty-state { text-align: center; padding: 80px 20px; color: var(--muted); }
+  .empty-state svg { margin-bottom: 16px; opacity: 0.3; }
+  .empty-state p { font-size: 15px; }
+
+  /* ── CARD ── */
+  .pekerjaan-card {
+    background: var(--surface); border-radius: 16px;
+    border: 1px solid var(--border); box-shadow: var(--shadow);
+    overflow: hidden; transition: all 0.25s;
+    animation: slideIn 0.3s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .pekerjaan-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+  .pekerjaan-card.card-terlambat { border-color: #fca5a5; box-shadow: 0 0 0 1px #fca5a5, var(--shadow); }
+
+  .card-inner { display: flex; align-items: flex-start; }
+
+  .card-accent {
+    width: 5px; align-self: stretch; flex-shrink: 0; min-height: 80px;
+  }
+  .accent-pending   { background: var(--amber); }
+  .accent-selesai   { background: var(--green); }
+  .accent-terlambat { background: var(--red); }
+
+  .card-content { flex: 1; padding: 18px 20px 14px 20px; min-width: 0; }
+
+  .card-top {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; gap: 12px; margin-bottom: 6px;
+  }
+
+  .card-title { font-size: 16px; font-weight: 700; color: var(--dark); line-height: 1.3; }
+
+  .card-top-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+  .card-badge {
+    padding: 4px 12px; border-radius: 100px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .badge-pending   { background: #fef3c7; color: #92400e; }
+  .badge-selesai   { background: #d1fae5; color: #065f46; }
+  .badge-terlambat { background: #fee2e2; color: #991b1b; }
+
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .badge-pending .badge-dot   { background: var(--amber); }
+  .badge-selesai .badge-dot   { background: var(--green); }
+  .badge-terlambat .badge-dot { background: var(--red); animation: blink 1.2s ease-in-out infinite; }
+
+  @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
+
+  .card-desc { font-size: 13px; color: var(--muted); margin-bottom: 10px; line-height: 1.6; }
+
+  .card-meta { display: flex; flex-wrap: wrap; gap: 14px; }
+
+  .meta-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); font-weight: 500; }
+  .deadline-overdue { color: var(--red) !important; font-weight: 700 !important; }
+
+  .countdown-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 100px; margin-left: 6px;
+  }
+  .chip-ok     { background: #d1fae5; color: #065f46; }
+  .chip-warn   { background: #fef3c7; color: #92400e; }
+  .chip-overdue{ background: #fee2e2; color: #991b1b; }
+
+  /* action icon btns */
+  .action-btn {
+    width: 32px; height: 32px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; transition: all 0.18s;
+  }
+  .action-btn:hover { background: #e2e8f0; transform: scale(1.1); }
+  .action-btn.delete:hover { background: #fee2e2; border-color: #fca5a5; }
+
+  /* ── STATUS ROW ── */
+  .status-btn-row {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    padding: 12px 20px 14px 25px;
+    background: #f8fafc;
+    border-top: 1px solid var(--border);
+  }
+
+  .status-label-text {
+    font-size: 11px; font-weight: 700; color: var(--muted);
+    letter-spacing: 0.5px; text-transform: uppercase; margin-right: 4px; flex-shrink: 0;
+  }
+
+  /* ── Indikator (non-clickable): Pending & Terlambat ── */
+  .status-indicator {
+    padding: 6px 14px; border-radius: 8px; border: 1.5px dashed transparent;
+    font-family: inherit; font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; gap: 6px;
+    letter-spacing: 0.2px; cursor: default; user-select: none;
+    pointer-events: none;
+  }
+
+  /* Pending indicator — shown active (current) */
+  .ind-pending-active {
+    background: var(--amber); color: #fff;
+    border-color: var(--amber-dark);
+    box-shadow: 0 4px 10px rgba(245,158,11,0.3);
+  }
+
+  /* Pending indicator — shown inactive (not current status) */
+  .ind-pending-inactive {
+    background: #fef9ec; color: #b8860b;
+    border-color: #fde68a; opacity: 0.55;
+  }
+
+  /* Terlambat indicator — shown active */
+  .ind-terlambat-active {
+    background: var(--red); color: #fff;
+    border-color: var(--red-dark);
+    box-shadow: 0 4px 10px rgba(239,68,68,0.3);
+  }
+
+  /* Terlambat indicator — shown inactive */
+  .ind-terlambat-inactive {
+    background: #fff5f5; color: #c0392b;
+    border-color: #fecaca; opacity: 0.55;
+  }
+
+  /* ── Tombol Selesai — satu-satunya yang bisa diklik ── */
+  .sbtn-selesai {
+    padding: 6px 18px; border-radius: 8px; border: 2px solid #a7f3d0;
+    font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+    transition: all 0.18s; display: flex; align-items: center; gap: 6px;
+    letter-spacing: 0.2px; background: #d1fae5; color: #065f46;
+  }
+  .sbtn-selesai:hover:not(.sbtn-active) {
+    background: #a7f3d0; border-color: var(--green);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(16,185,129,0.25);
+  }
+  .sbtn-selesai.sbtn-active {
+    background: var(--green); color: #fff; border-color: var(--green-dark);
+    box-shadow: 0 4px 12px rgba(16,185,129,0.4);
+    cursor: default;
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+    z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+  .modal {
+    background: var(--surface); border-radius: 20px; width: 100%; max-width: 560px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    transform: translateY(20px) scale(0.97);
+    transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-overlay.open .modal { transform: translateY(0) scale(1); }
+
+  .modal-header {
+    padding: 24px 28px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-size: 18px; font-weight: 700; color: var(--dark); }
+
+  .modal-close {
+    width: 32px; height: 32px; border-radius: 8px; border: none;
+    background: var(--bg); cursor: pointer; font-size: 16px;
+    display: flex; align-items: center; justify-content: center; transition: background 0.2s;
+  }
+  .modal-close:hover { background: #e2e8f0; }
+
+  .modal-body { padding: 24px 28px; display: flex; flex-direction: column; gap: 18px; }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  label { font-size: 13px; font-weight: 600; color: var(--navy); }
+
+  input[type="text"], input[type="date"], input[type="number"], textarea {
+    padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px;
+    font-family: inherit; font-size: 14px; color: var(--dark);
+    outline: none; background: var(--surface);
+    transition: border-color 0.2s, box-shadow 0.2s; width: 100%;
+  }
+  input:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+  textarea { resize: vertical; min-height: 90px; }
+
+  .modal-footer { padding: 16px 28px 24px; display: flex; gap: 12px; }
+
+  .btn-batal {
+    flex: 1; padding: 12px; border-radius: 10px; border: 1.5px solid var(--border);
+    background: transparent; font-family: inherit; font-size: 14px; font-weight: 600;
+    cursor: pointer; color: var(--muted); transition: all 0.2s;
+  }
+  .btn-batal:hover { background: var(--bg); }
+
+  .btn-submit {
+    flex: 2; padding: 12px; border-radius: 10px; border: none;
+    background: var(--dark); color: #fff; font-family: inherit; font-size: 14px;
+    font-weight: 700; cursor: pointer; transition: all 0.2s;
+  }
+  .btn-submit:hover { background: #1e3a5f; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(15,23,42,0.35); }
+
+  /* ── CONFIRM ── */
+  .confirm-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 300;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .confirm-overlay.open { opacity: 1; pointer-events: all; }
+
+  .confirm-box {
+    background: var(--surface); border-radius: 16px; padding: 28px;
+    max-width: 360px; width: 100%; text-align: center;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+  }
+  .confirm-icon  { font-size: 36px; margin-bottom: 12px; }
+  .confirm-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+  .confirm-sub   { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+  .confirm-btns  { display: flex; gap: 12px; }
+
+  .confirm-cancel {
+    flex: 1; padding: 11px; border-radius: 10px; border: 1.5px solid var(--border);
+    background: transparent; font-family: inherit; font-size: 14px; font-weight: 600;
+    cursor: pointer; color: var(--muted); transition: background 0.2s;
+  }
+  .confirm-cancel:hover { background: var(--bg); }
+
+  .confirm-delete {
+    flex: 1; padding: 11px; border-radius: 10px; border: none;
+    background: var(--red); color: #fff; font-family: inherit; font-size: 14px;
+    font-weight: 700; cursor: pointer; transition: all 0.2s;
+  }
+  .confirm-delete:hover { background: #dc2626; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: var(--dark); color: #fff; padding: 14px 20px; border-radius: 12px;
+    font-size: 14px; font-weight: 500; z-index: 999;
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  @media (max-width: 768px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .header { padding: 0 16px; }
+    .main { padding: 20px 16px; }
+    .form-row { grid-template-columns: 1fr; }
+  }
+</style>
 </head>
 <body>
-  <!-- Header -->
-  <header>
-    <div class="container">
-      <div class="header-content">
-        <div class="header-left">
-          <div class="header-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
-            </svg>
-          </div>
-          <div class="header-title">
-            <h1>Laporan Kerja</h1>
-            <p id="current-date"></p>
-          </div>
-        </div>
-        <div class="header-actions">
-          <button class="btn btn-primary" onclick="openModal()" id="add-btn">
-            <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-            </svg>
-            Tambah Pekerjaan
-          </button>
-          <button class="btn btn-outline btn-sm" onclick="openSettingsMenu(event)">
-            <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
-            </svg>
-          </button>
-        </div>
-        <div id="settings-menu" class="settings-dropdown" style="display: none;">
-          <button onclick="openConfigModal()">
-            <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-            </svg>
-            Konfigurasi GitHub
-            <span id="config-status" class="config-badge">⚠️ Belum diatur</span>
-          </button>
-          <button onclick="syncWithGitHub()">
-            <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-            </svg>
-            Sinkronkan dengan GitHub
-          </button>
-          <button onclick="exportData()">
-            <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-            </svg>
-            Ekspor Data
-          </button>
-          <button onclick="document.getElementById('import-file').click()">
-            <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
-            </svg>
-            Import Data
-          </button>
-          <button onclick="clearLocalCache()">
-            <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
-            </svg>
-            Hapus Cache Lokal
-          </button>
-          <button onclick="clearAllData()" style="color: var(--destructive);">
-            <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-            </svg>
-            Hapus Semua Data
-          </button>
-        </div>
-        <input type="file" id="import-file" accept=".json" style="display: none;" onchange="handleImportFile(event)">
-      </div>
+
+<header class="header">
+  <div class="header-left">
+    <div class="header-icon">📋</div>
+    <div>
+      <div class="header-title">Laporan Kerja</div>
+      <div class="header-date" id="headerDate"></div>
     </div>
-  </header>
+  </div>
+  <button class="btn-tambah" onclick="openModal()">＋ Tambah</button>
+</header>
 
-  <!-- Main Content -->
-  <main>
-    <div class="container">
-      <!-- Loading State -->
-      <div id="loading-state" class="loading">
-        <div class="spinner"></div>
-        <p>Memuat data dari GitHub...</p>
-      </div>
-
-      <!-- Content (hidden initially) -->
-      <div id="main-content" style="display: none;">
-        <!-- Statistics -->
-        <section>
-          <h2>Ringkasan</h2>
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-icon total">
-                <svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                </svg>
-              </div>
-              <div>
-                <div class="stat-value" id="stat-total">0</div>
-                <div class="stat-label">Total</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon completed">
-                <svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <div>
-                <div class="stat-value" id="stat-completed">0</div>
-                <div class="stat-label">Selesai</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon late">
-                <svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <div>
-                <div class="stat-value" id="stat-late">0</div>
-                <div class="stat-label">Terlambat</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon pending">
-                <svg class="icon-lg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <div>
-                <div class="stat-value" id="stat-pending">0</div>
-                <div class="stat-label">Pending</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Task List -->
-        <section>
-          <div class="filter-header">
-            <h2>Daftar Pekerjaan</h2>
-            <div class="filter-buttons">
-              <button class="filter-btn active" data-filter="all">Semua</button>
-              <button class="filter-btn" data-filter="pending">Pending</button>
-              <button class="filter-btn" data-filter="completed">Selesai</button>
-              <button class="filter-btn" data-filter="late">Terlambat</button>
-            </div>
-          </div>
-
-          <div id="task-list" class="task-list"></div>
-
-          <div id="empty-state" class="empty-state" style="display: none;">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-            </svg>
-            <h3 id="empty-title">Belum ada pekerjaan</h3>
-            <p id="empty-message">Klik tombol "Tambah Pekerjaan" untuk memulai</p>
-          </div>
-        </section>
-      </div>
+<div class="main">
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon-wrap stat-icon-total">📄</div>
+      <div><div class="stat-num" id="statTotal">0</div><div class="stat-label">Total</div></div>
     </div>
-  </main>
-
-  <!-- Modal -->
-  <div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
-    <div class="modal" onclick="event.stopPropagation()">
-      <h2>Tambah Pekerjaan Baru</h2>
-      <form id="task-form" onsubmit="handleSubmit(event)">
-        <div class="form-group">
-          <label for="unit">Unit</label>
-          <input type="text" id="unit" placeholder="Masukkan nama unit...">
-        </div>
-        <div class="form-group">
-          <label for="alamat">Alamat</label>
-          <textarea id="alamat" placeholder="Masukkan alamat lokasi..."></textarea>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="jumlah-kendaraan">Jumlah Kendaraan</label>
-            <input type="number" id="jumlah-kendaraan" min="0" placeholder="0">
-          </div>
-          <div class="form-group">
-            <label for="jumlah-personel">Jumlah Personel</label>
-            <input type="number" id="jumlah-personel" min="0" placeholder="0">
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-outline" onclick="closeModal()">Batal</button>
-          <button type="submit" class="btn btn-primary" id="submit-btn">Simpan</button>
-        </div>
-      </form>
+    <div class="stat-card">
+      <div class="stat-icon-wrap stat-icon-selesai">✅</div>
+      <div><div class="stat-num" id="statSelesai">0</div><div class="stat-label">Selesai</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon-wrap stat-icon-pending">🕐</div>
+      <div><div class="stat-num" id="statPending">0</div><div class="stat-label">Pending</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon-wrap stat-icon-terlambat">⚠️</div>
+      <div><div class="stat-num" id="statTerlambat">0</div><div class="stat-label">Terlambat</div></div>
     </div>
   </div>
 
-  <!-- Modal Konfigurasi GitHub -->
-  <div class="modal-overlay" id="config-modal-overlay" onclick="closeConfigModal(event)">
-    <div class="modal" onclick="event.stopPropagation()">
-      <h2>⚙️ Konfigurasi GitHub</h2>
-      <p style="color: var(--muted); font-size: 0.875rem; margin-bottom: 20px;">
-        Masukkan informasi repository GitHub Anda untuk menyimpan data.
-      </p>
-      <form id="config-form" onsubmit="handleConfigSubmit(event)">
-        <div class="form-group">
-          <label for="config-owner">Repository Owner (Username)</label>
-          <input type="text" id="config-owner" placeholder="contoh: kiralzaky01" required>
-        </div>
-        <div class="form-group">
-          <label for="config-repo">Repository Name</label>
-          <input type="text" id="config-repo" placeholder="contoh: laporan.github.io" required>
-        </div>
-        <div class="form-group">
-          <label for="config-token">GitHub Personal Access Token</label>
-          <input type="password" id="config-token" placeholder="ghp_xxxxxxxxxxxx..." required>
-          <small style="color: var(--muted); font-size: 0.75rem; margin-top: 4px; display: block;">
-            <a href="https://github.com/settings/tokens/new" target="_blank" style="color: var(--primary);">Buat token baru di sini</a> dengan scope "repo"
-          </small>
-        </div>
-        <div class="form-group">
-          <label for="config-branch">Branch</label>
-          <input type="text" id="config-branch" placeholder="main" value="main" required>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-outline" onclick="closeConfigModal()">Batal</button>
-          <button type="submit" class="btn btn-primary">Simpan Konfigurasi</button>
-        </div>
-      </form>
-    </div>
+  <div class="filter-row">
+    <button class="filter-btn active" data-filter="semua"     onclick="setFilter('semua')">Semua (<span id="fSemua">0</span>)</button>
+    <button class="filter-btn"        data-filter="pending"   onclick="setFilter('pending')">Pending (<span id="fPending">0</span>)</button>
+    <button class="filter-btn"        data-filter="selesai"   onclick="setFilter('selesai')">Selesai (<span id="fSelesai">0</span>)</button>
+    <button class="filter-btn"        data-filter="terlambat" onclick="setFilter('terlambat')">Terlambat (<span id="fTerlambat">0</span>)</button>
   </div>
 
-  <!-- Toast Container -->
-  <div class="toast-container" id="toast-container"></div>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Cari pekerjaan..." oninput="renderList()">
+  </div>
 
-  <script>
-    // ===============================
-    // GITHUB CONFIGURATION
-    // ===============================
-    const CONFIG_STORAGE_KEY = 'laporan-kerja-github-config';
-    const FILE_PATH = "data.json";
-    
-    let REPO_OWNER = "";
-    let REPO_NAME = "";
-    let BRANCH = "main";
-    let TOKEN = "";
+  <div id="autoNotice" style="display:none" class="auto-notice">
+    ⏰ <span id="autoNoticeText"></span>
+  </div>
 
-    // Load saved config
-    function loadGitHubConfig() {
-      try {
-        const saved = localStorage.getItem(CONFIG_STORAGE_KEY);
-        if (saved) {
-          const config = JSON.parse(saved);
-          REPO_OWNER = config.owner || "";
-          REPO_NAME = config.repo || "";
-          BRANCH = config.branch || "main";
-          TOKEN = config.token || "";
-          
-          if (TOKEN) {
-            updateConfigStatus(true);
-          }
-          
-          return true;
-        }
-      } catch (error) {
-        console.error('Error loading config:', error);
+  <div class="list-wrap" id="listWrap"></div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Tambah Pekerjaan Baru</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Judul Pekerjaan *</label>
+        <input type="text" id="fJudul" placeholder="Masukkan judul pekerjaan">
+      </div>
+      <div class="form-group">
+        <label>Deskripsi</label>
+        <textarea id="fDeskripsi" placeholder="Masukkan deskripsi pekerjaan"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Deadline</label>
+        <input type="date" id="fDeadline">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Unit</label>
+          <input type="text" id="fUnit" placeholder="Unit kerja">
+        </div>
+        <div class="form-group">
+          <label>Alamat</label>
+          <input type="text" id="fAlamat" placeholder="Alamat lokasi">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Jumlah Kendaraan</label>
+          <input type="number" id="fKendaraan" value="0" min="0">
+        </div>
+        <div class="form-group">
+          <label>Jumlah Personel</label>
+          <input type="number" id="fPersonel" value="0" min="0">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-batal" onclick="closeModal()">Batal</button>
+      <button class="btn-submit" onclick="savePekerjaan()" id="btnSubmit">Tambah Pekerjaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-title">Hapus Pekerjaan?</div>
+    <div class="confirm-sub">Tindakan ini tidak dapat dibatalkan.</div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" onclick="closeConfirm()">Batal</button>
+      <button class="confirm-delete" onclick="confirmDelete()">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let data = JSON.parse(localStorage.getItem('laporanKerja') || '[]');
+  let currentFilter = 'semua';
+  let editingId = null;
+  let deletingId = null;
+
+  function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function daysUntil(dl) {
+    if (!dl) return null;
+    const t = new Date(); t.setHours(0,0,0,0);
+    const d = new Date(dl); d.setHours(0,0,0,0);
+    return Math.round((d - t) / 86400000);
+  }
+
+  function persist() { localStorage.setItem('laporanKerja', JSON.stringify(data)); }
+
+  // Auto-mark terlambat: pending items whose deadline has passed
+  function checkAutoTerlambat() {
+    const today = todayStr();
+    let changed = 0;
+    data.forEach(d => {
+      if (d.status === 'pending' && d.deadline && d.deadline < today) {
+        d.status = 'terlambat';
+        changed++;
       }
-      return false;
-    }
-
-    function saveGitHubConfig(owner, repo, token, branch) {
-      try {
-        const config = { owner, repo, token, branch };
-        localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config));
-        REPO_OWNER = owner;
-        REPO_NAME = repo;
-        TOKEN = token;
-        BRANCH = branch;
-        updateConfigStatus(true);
-        return true;
-      } catch (error) {
-        console.error('Error saving config:', error);
-        return false;
-      }
-    }
-
-    function updateConfigStatus(isConfigured) {
-      const statusBadge = document.getElementById('config-status');
-      if (statusBadge) {
-        if (isConfigured) {
-          statusBadge.textContent = '✓ Terkonfigurasi';
-          statusBadge.className = 'config-badge success';
-        } else {
-          statusBadge.textContent = '⚠️ Belum diatur';
-          statusBadge.className = 'config-badge';
-        }
-      }
-    }
-
-    // Local Storage Key for backup/cache
-    const STORAGE_KEY = 'laporan-kerja-tasks-cache';
-
-    // ===============================
-    // STATE MANAGEMENT
-    // ===============================
-    let tasks = [];
-    let currentFilter = 'all';
-    let isLoading = false;
-
-    // ===============================
-    // GITHUB API FUNCTIONS
-    // ===============================
-    async function loadDataFromGitHub() {
-      if (!TOKEN) {
-        console.log('No GitHub token configured, using local cache only');
-        return await loadFromLocalCache();
-      }
-      
-      try {
-        const url = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/${BRANCH}/${FILE_PATH}`;
-        console.log('Loading from:', url);
-        
-        const res = await fetch(url, {
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
-        });
-        
-        if (!res.ok) {
-          if (res.status === 404) {
-            console.log('File not found, will create on first save');
-            const cached = await loadFromLocalCache();
-            if (cached.length > 0) {
-              showToast('Info', 'Menggunakan data dari cache lokal', 'success');
-            }
-            return cached;
-          }
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        }
-        
-        const data = await res.json();
-        console.log('Loaded from GitHub:', data.length, 'tasks');
-        await saveToLocalCache(data);
-        return data;
-      } catch (error) {
-        console.error('Error loading from GitHub:', error);
-        showToast('Peringatan', 'Gagal memuat dari GitHub: ' + error.message, 'error');
-        return await loadFromLocalCache();
-      }
-    }
-
-    async function saveDataToGitHub(newData) {
-      if (!TOKEN) {
-        console.log('No GitHub token configured, saving to local cache only');
-        await saveToLocalCache(newData);
-        showToast('Info', 'Data disimpan di cache lokal. Konfigurasi GitHub untuk sync online.', 'error');
-        return false;
-      }
-      
-      try {
-        console.log('Saving to GitHub...', newData.length, 'tasks');
-        
-        const getFileUrl = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`;
-        
-        // Get current file SHA if exists
-        let sha = null;
-        try {
-          const getRes = await fetch(getFileUrl, {
-            headers: { 
-              'Authorization': `Bearer ${TOKEN}`,
-              'Accept': 'application/vnd.github.v3+json'
-            }
-          });
-
-          if (getRes.ok) {
-            const fileData = await getRes.json();
-            sha = fileData.sha;
-            console.log('File exists with SHA:', sha);
-          } else if (getRes.status === 404) {
-            console.log('File does not exist, will create new');
-          } else {
-            throw new Error(`Failed to check file: ${getRes.status} ${getRes.statusText}`);
-          }
-        } catch (checkError) {
-          console.error('Error checking file:', checkError);
-        }
-
-        // Encode content to base64
-        const content = btoa(unescape(encodeURIComponent(JSON.stringify(newData, null, 2))));
-
-        // Update or create file
-        const updatePayload = {
-          message: `Update data laporan kerja - ${new Date().toISOString()}`,
-          content: content,
-          branch: BRANCH
-        };
-        
-        if (sha) {
-          updatePayload.sha = sha;
-        }
-
-        console.log('Sending update request...');
-        const updateRes = await fetch(getFileUrl, {
-          method: "PUT",
-          headers: {
-            'Authorization': `Bearer ${TOKEN}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/vnd.github.v3+json'
-          },
-          body: JSON.stringify(updatePayload)
-        });
-
-        if (!updateRes.ok) {
-          const errorText = await updateRes.text();
-          console.error('GitHub API Error:', updateRes.status, errorText);
-          throw new Error(`Failed to save: ${updateRes.status} - ${errorText}`);
-        }
-
-        const result = await updateRes.json();
-        console.log('Successfully saved to GitHub:', result.commit.sha);
-        
-        await saveToLocalCache(newData);
-        return true;
-      } catch (error) {
-        console.error('Error saving to GitHub:', error);
-        showToast('Error', 'Gagal menyimpan ke GitHub: ' + error.message, 'error');
-        await saveToLocalCache(newData);
-        return false;
-      }
-    }
-
-    // ===============================
-    // LOCAL CACHE FUNCTIONS (BACKUP)
-    // ===============================
-    async function loadFromLocalCache() {
-      try {
-        const cached = localStorage.getItem(STORAGE_KEY);
-        if (cached) {
-          return JSON.parse(cached);
-        }
-        return [];
-      } catch (error) {
-        console.error('Error loading from cache:', error);
-        return [];
-      }
-    }
-
-    async function saveToLocalCache(data) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      } catch (error) {
-        console.error('Error saving to cache:', error);
-      }
-    }
-
-    async function clearLocalCache() {
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-        showToast('Berhasil', 'Cache lokal berhasil dihapus', 'success');
-      } catch (error) {
-        console.error('Error clearing cache:', error);
-      }
-    }
-
-    // ===============================
-    // EXPORT/IMPORT FUNCTIONS
-    // ===============================
-    async function exportData() {
-      const dataStr = JSON.stringify(tasks, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `laporan-kerja-${new Date().toISOString().split('T')[0]}.json`;
-      link.click();
-      URL.revokeObjectURL(url);
-      showToast('Berhasil', 'Data berhasil diekspor', 'success');
-    }
-
-    async function importData(file) {
-      try {
-        const text = await file.text();
-        const importedTasks = JSON.parse(text);
-        
-        if (!Array.isArray(importedTasks)) {
-          throw new Error('Format file tidak valid');
-        }
-        
-        if (confirm(`Import ${importedTasks.length} data? Data yang ada akan diganti.`)) {
-          tasks = importedTasks;
-          await saveDataToGitHub(tasks);
-          renderTasks();
-          showToast('Berhasil', 'Data berhasil diimpor dan disimpan ke GitHub', 'success');
-        }
-      } catch (error) {
-        console.error('Error importing data:', error);
-        showToast('Error', 'Gagal mengimpor data. Pastikan format file benar.', 'error');
-      }
-    }
-
-    async function syncWithGitHub() {
-      if (isLoading) return;
-      isLoading = true;
-      
-      showToast('Info', 'Menyinkronkan dengan GitHub...', 'success');
-      
-      const freshData = await loadDataFromGitHub();
-      tasks = freshData;
-      renderTasks();
-      
-      isLoading = false;
-      showToast('Berhasil', 'Data berhasil disinkronkan dari GitHub', 'success');
-    }
-
-    async function clearAllData() {
-      if (!confirm('Yakin ingin menghapus SEMUA data? Tindakan ini tidak dapat dibatalkan!')) {
-        return;
-      }
-      
-      if (!confirm('Konfirmasi sekali lagi: Hapus SEMUA data?')) {
-        return;
-      }
-      
-      try {
-        tasks = [];
-        await saveDataToGitHub(tasks);
-        await clearLocalCache();
-        renderTasks();
-        showToast('Berhasil', 'Semua data berhasil dihapus', 'success');
-      } catch (error) {
-        console.error('Error clearing data:', error);
-        showToast('Error', 'Gagal menghapus data', 'error');
-      }
-    }
-
-    // ===============================
-    // INITIALIZATION
-    // ===============================
-    document.addEventListener('DOMContentLoaded', async () => {
-      updateCurrentDate();
-      setupFilterButtons();
-      
-      // Load GitHub config first
-      const hasConfig = loadGitHubConfig();
-      
-      if (!hasConfig) {
-        showToast('Info', 'Silakan konfigurasi GitHub terlebih dahulu', 'error');
-        updateConfigStatus(false);
-      }
-      
-      tasks = await loadDataFromGitHub();
-      
-      document.getElementById('loading-state').style.display = 'none';
-      document.getElementById('main-content').style.display = 'block';
-      
-      renderTasks();
-      updateTaskStatuses();
-      
-      setInterval(updateTaskStatuses, 60000);
     });
+    if (changed > 0) {
+      persist();
+      const el = document.getElementById('autoNotice');
+      document.getElementById('autoNoticeText').textContent =
+        `${changed} pekerjaan otomatis ditandai Terlambat karena deadline telah lewat.`;
+      el.style.display = 'flex';
+      setTimeout(() => { el.style.display = 'none'; }, 7000);
+    }
+  }
 
-    // ===============================
-    // DATE FUNCTIONS
-    // ===============================
-    function updateCurrentDate() {
-      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-      const date = new Date().toLocaleDateString('id-ID', options);
-      document.getElementById('current-date').textContent = date;
+  function init() {
+    const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
+    document.getElementById('headerDate').textContent = new Date().toLocaleDateString('id-ID', opts);
+    checkAutoTerlambat();
+    updateStats();
+    renderList();
+    // Re-check every minute for live deadline tracking
+    setInterval(() => { checkAutoTerlambat(); updateStats(); renderList(); }, 60000);
+  }
+
+  function updateStats() {
+    const total     = data.length;
+    const selesai   = data.filter(d => d.status === 'selesai').length;
+    const pending   = data.filter(d => d.status === 'pending').length;
+    const terlambat = data.filter(d => d.status === 'terlambat').length;
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statSelesai').textContent = selesai;
+    document.getElementById('statPending').textContent = pending;
+    document.getElementById('statTerlambat').textContent = terlambat;
+    document.getElementById('fSemua').textContent = total;
+    document.getElementById('fPending').textContent = pending;
+    document.getElementById('fSelesai').textContent = selesai;
+    document.getElementById('fTerlambat').textContent = terlambat;
+  }
+
+  function setFilter(f) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
+    renderList();
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function renderList() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    let list = [...data];
+    if (currentFilter !== 'semua') list = list.filter(d => d.status === currentFilter);
+    if (q) list = list.filter(d =>
+      d.judul.toLowerCase().includes(q) ||
+      (d.deskripsi||'').toLowerCase().includes(q) ||
+      (d.unit||'').toLowerCase().includes(q)
+    );
+
+    const wrap = document.getElementById('listWrap');
+
+    if (!list.length) {
+      wrap.innerHTML = `<div class="empty-state">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+          <rect x="3" y="3" width="18" height="18" rx="3"/>
+          <line x1="9" y1="9" x2="15" y2="9"/>
+          <line x1="9" y1="12" x2="15" y2="12"/>
+          <line x1="9" y1="15" x2="12" y2="15"/>
+        </svg>
+        <p>Belum ada pekerjaan. Klik "Tambah" untuk memulai.</p>
+      </div>`;
+      return;
     }
 
-    function formatDate(dateStr) {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-    }
+    wrap.innerHTML = list.map(d => {
+      const days = daysUntil(d.deadline);
+      const dlStr = d.deadline
+        ? new Date(d.deadline).toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'})
+        : null;
 
-    function formatDateTime(dateStr) {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('id-ID', { 
-        day: 'numeric', 
-        month: 'short', 
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
-
-    // ===============================
-    // TASK STATUS MANAGEMENT
-    // ===============================
-    async function updateTaskStatuses() {
-      const now = new Date();
-      let updated = false;
-      
-      tasks.forEach(task => {
-        if (task.status === 'pending' && new Date(task.deadline) < now) {
-          task.status = 'late';
-          updated = true;
-        }
-      });
-      
-      if (updated) {
-        await saveDataToGitHub(tasks);
-        renderTasks();
+      let chip = '';
+      if (d.deadline && d.status !== 'selesai') {
+        if (days < 0)      chip = `<span class="countdown-chip chip-overdue">⚠ Lewat ${Math.abs(days)} hari</span>`;
+        else if (days===0) chip = `<span class="countdown-chip chip-warn">⏰ Hari ini!</span>`;
+        else if (days<=3)  chip = `<span class="countdown-chip chip-warn">⏰ ${days} hari lagi</span>`;
+        else               chip = `<span class="countdown-chip chip-ok">✓ ${days} hari lagi</span>`;
       }
-    }
 
-    // ===============================
-    // STATISTICS
-    // ===============================
-    function updateStats() {
-      const total = tasks.length;
-      const completed = tasks.filter(t => t.status === 'completed').length;
-      const late = tasks.filter(t => t.status === 'late').length;
-      const pending = tasks.filter(t => t.status === 'pending').length;
-
-      document.getElementById('stat-total').textContent = total;
-      document.getElementById('stat-completed').textContent = completed;
-      document.getElementById('stat-late').textContent = late;
-      document.getElementById('stat-pending').textContent = pending;
-    }
-
-    // ===============================
-    // RENDER TASKS
-    // ===============================
-    function renderTasks() {
-      updateStats();
-      
-      const filteredTasks = currentFilter === 'all' 
-        ? tasks 
-        : tasks.filter(t => t.status === currentFilter);
-      
-      const sortedTasks = [...filteredTasks].sort((a, b) => {
-        if (a.status === 'pending' && b.status !== 'pending') return -1;
-        if (a.status !== 'pending' && b.status === 'pending') return 1;
-        return new Date(b.createdAt) - new Date(a.createdAt);
-      });
-
-      const taskList = document.getElementById('task-list');
-      const emptyState = document.getElementById('empty-state');
-
-      if (sortedTasks.length === 0) {
-        taskList.innerHTML = '';
-        emptyState.style.display = 'block';
-        
-        const emptyTitle = document.getElementById('empty-title');
-        const emptyMessage = document.getElementById('empty-message');
-        
-        if (currentFilter === 'all') {
-          emptyTitle.textContent = 'Belum ada pekerjaan';
-          emptyMessage.textContent = 'Klik tombol "Tambah Pekerjaan" untuk memulai';
-        } else {
-          const labels = { pending: 'pending', completed: 'selesai', late: 'terlambat' };
-          emptyTitle.textContent = `Tidak ada pekerjaan ${labels[currentFilter]}`;
-          emptyMessage.textContent = 'Coba filter lain untuk melihat pekerjaan';
-        }
-      } else {
-        emptyState.style.display = 'none';
-        taskList.innerHTML = sortedTasks.map(task => createTaskCard(task)).join('');
-      }
-    }
-
-    // ===============================
-    // CREATE TASK CARD
-    // ===============================
-    function createTaskCard(task) {
-      const statusIcons = {
-        completed: `<svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`,
-        late: `<svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>`,
-        pending: `<svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`
-      };
-
-      const badgeLabels = { completed: 'Selesai', late: 'Terlambat', pending: 'Pending' };
+      const dlClass = (days!==null && days<0 && d.status!=='selesai') ? 'deadline-overdue' : '';
+      const statusLabel = {pending:'Pending', selesai:'Selesai', terlambat:'Terlambat'}[d.status];
 
       return `
-        <div class="task-card ${task.status}" id="task-${task.id}">
-          <div class="task-header" onclick="toggleTask('${task.id}')">
-            <div class="task-header-left">
-              <div class="task-status-icon ${task.status}">
-                ${statusIcons[task.status]}
-              </div>
-              <div>
-                <div class="task-title">${escapeHtml(task.title)}</div>
-                <div class="task-deadline">Deadline: ${formatDate(task.deadline)}</div>
+      <div class="pekerjaan-card ${d.status==='terlambat' ? 'card-terlambat' : ''}" id="card-${d.id}">
+        <div class="card-inner">
+          <div class="card-accent accent-${d.status}"></div>
+          <div class="card-content">
+            <div class="card-top">
+              <div class="card-title">${escHtml(d.judul)}</div>
+              <div class="card-top-right">
+                <span class="card-badge badge-${d.status}">
+                  <span class="badge-dot"></span>${statusLabel}
+                </span>
+                <button class="action-btn" onclick="openEdit('${d.id}')" title="Edit">✏️</button>
+                <button class="action-btn delete" onclick="openConfirm('${d.id}')" title="Hapus">🗑️</button>
               </div>
             </div>
-            <div class="task-header-right">
-              <span class="badge ${task.status}">${badgeLabels[task.status]}</span>
-              <button class="btn btn-ghost">
-                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-          <div class="task-content" id="content-${task.id}">
-            <div class="task-description">
-              <h4>Deskripsi:</h4>
-              <p>${task.description ? escapeHtml(task.description) : 'Tidak ada deskripsi'}</p>
-            </div>
-            <div class="task-meta">
-              <div>
-                <span>Unit:</span>
-                <p>${task.unit ? escapeHtml(task.unit) : '-'}</p>
-              </div>
-              <div>
-                <span>Alamat:</span>
-                <p>${task.alamat ? escapeHtml(task.alamat) : '-'}</p>
-              </div>
-              <div>
-                <span>Jumlah Kendaraan:</span>
-                <p>${task.jumlahKendaraan || 0}</p>
-              </div>
-              <div>
-                <span>Jumlah Personel:</span>
-                <p>${task.jumlahPersonel || 0}</p>
-              </div>
-              <div>
-                <span>Dibuat:</span>
-                <p>${formatDateTime(task.createdAt)}</p>
-              </div>
-              ${task.completedAt ? `
-                <div>
-                  <span>Diselesaikan:</span>
-                  <p>${formatDateTime(task.completedAt)}</p>
-                </div>
-              ` : ''}
-            </div>
-            <div class="task-actions">
-              ${task.status === 'pending' ? `
-                <button class="btn btn-success" onclick="completeTask('${task.id}')">
-                  <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                  </svg>
-                  Tandai Selesai
-                </button>
-              ` : ''}
-              <button class="btn btn-danger" onclick="deleteTask('${task.id}')">
-                <svg class="icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                </svg>
-              </button>
+            ${d.deskripsi ? `<div class="card-desc">${escHtml(d.deskripsi)}</div>` : ''}
+            <div class="card-meta">
+              ${dlStr    ? `<div class="meta-item ${dlClass}">📅 ${dlStr}${chip}</div>` : ''}
+              ${d.unit   ? `<div class="meta-item">🏢 ${escHtml(d.unit)}</div>` : ''}
+              ${d.alamat ? `<div class="meta-item">📍 ${escHtml(d.alamat)}</div>` : ''}
+              ${d.kendaraan>0 ? `<div class="meta-item">🚗 ${d.kendaraan} kendaraan</div>` : ''}
+              ${d.personel >0 ? `<div class="meta-item">👥 ${d.personel} personel</div>` : ''}
             </div>
           </div>
         </div>
-      `;
+
+        <div class="status-btn-row">
+          <span class="status-label-text">Status:</span>
+
+          <!-- Pending: indikator saja, tidak bisa diklik -->
+          <span class="status-indicator ${d.status==='pending' ? 'ind-pending-active' : 'ind-pending-inactive'}">
+            🕐 Pending
+          </span>
+
+          <!-- Selesai: SATU-SATUNYA tombol yang bisa diklik -->
+          <button
+            class="sbtn-selesai ${d.status==='selesai' ? 'sbtn-active' : ''}"
+            onclick="${d.status!=='selesai' ? `changeStatus('${d.id}','selesai')` : ''}"
+            title="${d.status==='selesai' ? 'Sudah selesai' : 'Tandai selesai'}"
+          >✅ Selesai</button>
+
+          <!-- Terlambat: indikator saja, tidak bisa diklik -->
+          <span class="status-indicator ${d.status==='terlambat' ? 'ind-terlambat-active' : 'ind-terlambat-inactive'}">
+            ⚠️ Terlambat
+          </span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Only 'selesai' is allowed from button click — pending/terlambat are set automatically
+  function changeStatus(id, newStatus) {
+    if (newStatus !== 'selesai') return;
+    const d = data.find(x => x.id === id);
+    if (!d || d.status === newStatus) return;
+    d.status = newStatus;
+    persist();
+    updateStats();
+    renderList();
+    showToast('✅ Pekerjaan ditandai Selesai!');
+  }
+
+  function openModal() {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = 'Tambah Pekerjaan Baru';
+    document.getElementById('btnSubmit').textContent  = 'Tambah Pekerjaan';
+    clearForm();
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function openEdit(id) {
+    const d = data.find(x => x.id === id);
+    if (!d) return;
+    editingId = id;
+    document.getElementById('modalTitle').textContent = 'Edit Pekerjaan';
+    document.getElementById('btnSubmit').textContent  = 'Simpan Perubahan';
+    document.getElementById('fJudul').value     = d.judul     || '';
+    document.getElementById('fDeskripsi').value = d.deskripsi || '';
+    document.getElementById('fDeadline').value  = d.deadline  || '';
+    document.getElementById('fUnit').value      = d.unit      || '';
+    document.getElementById('fAlamat').value    = d.alamat    || '';
+    document.getElementById('fKendaraan').value = d.kendaraan || 0;
+    document.getElementById('fPersonel').value  = d.personel  || 0;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+
+  function clearForm() {
+    ['fJudul','fDeskripsi','fDeadline','fUnit','fAlamat'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('fKendaraan').value = 0;
+    document.getElementById('fPersonel').value  = 0;
+  }
+
+  function savePekerjaan() {
+    const judul = document.getElementById('fJudul').value.trim();
+    if (!judul) {
+      const el = document.getElementById('fJudul');
+      el.focus(); el.style.borderColor = 'var(--red)';
+      setTimeout(() => el.style.borderColor = '', 1500);
+      return;
     }
 
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    }
+    const deadline = document.getElementById('fDeadline').value;
+    const entry = {
+      judul,
+      deskripsi: document.getElementById('fDeskripsi').value.trim(),
+      deadline,
+      unit:      document.getElementById('fUnit').value.trim(),
+      alamat:    document.getElementById('fAlamat').value.trim(),
+      kendaraan: parseInt(document.getElementById('fKendaraan').value) || 0,
+      personel:  parseInt(document.getElementById('fPersonel').value)  || 0,
+    };
 
-    // ===============================
-    // TASK ACTIONS
-    // ===============================
-    function toggleTask(id) {
-      const content = document.getElementById(`content-${id}`);
-      content.classList.toggle('show');
-    }
-
-    async function completeTask(id) {
-      if (isLoading) return;
-      isLoading = true;
-      
-      const task = tasks.find(t => t.id === id);
-      if (task) {
-        const now = new Date();
-        const isLate = now > new Date(task.deadline);
-        task.status = isLate ? 'late' : 'completed';
-        task.completedAt = now.toISOString();
-        
-        const success = await saveDataToGitHub(tasks);
-        if (success) {
-          renderTasks();
-          showToast('Berhasil', 'Pekerjaan ditandai selesai', 'success');
-        }
+    if (editingId) {
+      const idx = data.findIndex(x => x.id === editingId);
+      if (idx !== -1) {
+        let st = data[idx].status;
+        // if deadline was updated to past and status is pending => auto terlambat
+        if (st === 'pending' && deadline && deadline < todayStr()) st = 'terlambat';
+        data[idx] = { ...data[idx], ...entry, status: st };
       }
-      
-      isLoading = false;
+      showToast('✅ Pekerjaan diperbarui');
+    } else {
+      // auto-set status on create
+      let st = 'pending';
+      if (deadline && deadline < todayStr()) st = 'terlambat';
+      entry.id = 'pk_' + Date.now();
+      entry.createdAt = new Date().toISOString();
+      entry.status = st;
+      data.unshift(entry);
+      if (st === 'terlambat') showToast('⚠️ Ditambahkan — deadline sudah lewat (Terlambat)');
+      else showToast('✅ Pekerjaan berhasil ditambahkan');
     }
 
-    async function deleteTask(id) {
-      if (isLoading) return;
-      
-      if (!confirm('Yakin ingin menghapus pekerjaan ini?')) return;
-      
-      isLoading = true;
-      tasks = tasks.filter(t => t.id !== id);
-      
-      const success = await saveDataToGitHub(tasks);
-      if (success) {
-        renderTasks();
-        showToast('Berhasil', 'Pekerjaan dihapus', 'success');
-      }
-      
-      isLoading = false;
-    }
+    persist();
+    updateStats();
+    renderList();
+    closeModal();
+  }
 
-    // ===============================
-    // FILTER
-    // ===============================
-    function setupFilterButtons() {
-      document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          currentFilter = btn.dataset.filter;
-          renderTasks();
-        });
-      });
-    }
+  function openConfirm(id)  { deletingId = id; document.getElementById('confirmOverlay').classList.add('open'); }
+  function closeConfirm()   { deletingId = null; document.getElementById('confirmOverlay').classList.remove('open'); }
 
-    // ===============================
-    // MODAL
-    // ===============================
-    function openModal() {
-      document.getElementById('modal-overlay').classList.add('show');
-      document.getElementById('title').focus();
-    }
+  function confirmDelete() {
+    data = data.filter(x => x.id !== deletingId);
+    persist(); updateStats(); renderList(); closeConfirm();
+    showToast('🗑️ Pekerjaan dihapus');
+  }
 
-    function closeModal(event) {
-      if (!event || event.target === document.getElementById('modal-overlay')) {
-        document.getElementById('modal-overlay').classList.remove('show');
-        document.getElementById('task-form').reset();
-      }
-    }
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
 
-    // ===============================
-    // FORM SUBMIT
-    // ===============================
-    async function handleSubmit(event) {
-      event.preventDefault();
-      
-      if (isLoading) return;
-      
-      const title = document.getElementById('title').value.trim();
-      const description = document.getElementById('description').value.trim();
-      const deadline = document.getElementById('deadline').value;
-      const unit = document.getElementById('unit').value.trim();
-      const alamat = document.getElementById('alamat').value.trim();
-      const jumlahKendaraan = parseInt(document.getElementById('jumlah-kendaraan').value) || 0;
-      const jumlahPersonel = parseInt(document.getElementById('jumlah-personel').value) || 0;
+  document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target===document.getElementById('modalOverlay')) closeModal(); });
+  document.getElementById('confirmOverlay').addEventListener('click', e => { if (e.target===document.getElementById('confirmOverlay')) closeConfirm(); });
 
-      if (!title) {
-        showToast('Error', 'Judul pekerjaan harus diisi', 'error');
-        return;
-      }
-
-      if (!deadline) {
-        showToast('Error', 'Deadline harus dipilih', 'error');
-        return;
-      }
-
-      isLoading = true;
-      
-      document.getElementById('submit-btn').disabled = true;
-      document.getElementById('add-btn').disabled = true;
-
-      const newTask = {
-        id: Date.now().toString(),
-        title,
-        description,
-        deadline,
-        unit,
-        alamat,
-        jumlahKendaraan,
-        jumlahPersonel,
-        createdAt: new Date().toISOString(),
-        status: 'pending'
-      };
-
-      tasks.push(newTask);
-      
-      const success = await saveDataToGitHub(tasks);
-      
-      if (success) {
-        renderTasks();
-        closeModal();
-        showToast('Berhasil', 'Pekerjaan berhasil ditambahkan', 'success');
-      } else {
-        tasks.pop();
-      }
-      
-      document.getElementById('submit-btn').disabled = false;
-      document.getElementById('add-btn').disabled = false;
-      isLoading = false;
-    }
-
-    // ===============================
-    // TOAST NOTIFICATION
-    // ===============================
-    function showToast(title, message, type = 'success') {
-      const container = document.getElementById('toast-container');
-      const toast = document.createElement('div');
-      toast.className = `toast ${type}`;
-      toast.innerHTML = `
-        <div class="toast-title">${title}</div>
-        <div class="toast-message">${message}</div>
-      `;
-      container.appendChild(toast);
-
-      setTimeout(() => {
-        toast.style.opacity = '0';
-        toast.style.transform = 'translateX(100%)';
-        setTimeout(() => toast.remove(), 300);
-      }, 3000);
-    }
-
-    // ===============================
-    // SETTINGS MENU
-    // ===============================
-    function openSettingsMenu(event) {
-      event.stopPropagation();
-      const menu = document.getElementById('settings-menu');
-      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-    }
-
-    function handleImportFile(event) {
-      const file = event.target.files[0];
-      if (file) {
-        importData(file);
-      }
-      event.target.value = '';
-    }
-
-    // Close settings menu when clicking outside
-    document.addEventListener('click', () => {
-      const menu = document.getElementById('settings-menu');
-      if (menu) menu.style.display = 'none';
-    });
-
-    // ===============================
-    // CONFIG MODAL
-    // ===============================
-    function openConfigModal() {
-      // Load existing config
-      const saved = localStorage.getItem(CONFIG_STORAGE_KEY);
-      if (saved) {
-        try {
-          const config = JSON.parse(saved);
-          document.getElementById('config-owner').value = config.owner || '';
-          document.getElementById('config-repo').value = config.repo || '';
-          document.getElementById('config-branch').value = config.branch || 'main';
-          document.getElementById('config-token').value = config.token || '';
-        } catch (e) {
-          console.error('Error loading config:', e);
-        }
-      }
-      
-      document.getElementById('config-modal-overlay').classList.add('show');
-      document.getElementById('config-owner').focus();
-    }
-
-    function closeConfigModal(event) {
-      if (!event || event.target === document.getElementById('config-modal-overlay')) {
-        document.getElementById('config-modal-overlay').classList.remove('show');
-      }
-    }
-
-    async function handleConfigSubmit(event) {
-      event.preventDefault();
-      
-      const owner = document.getElementById('config-owner').value.trim();
-      const repo = document.getElementById('config-repo').value.trim();
-      const token = document.getElementById('config-token').value.trim();
-      const branch = document.getElementById('config-branch').value.trim() || 'main';
-      
-      if (!owner || !repo || !token) {
-        showToast('Error', 'Semua field harus diisi', 'error');
-        return;
-      }
-      
-      // Test connection
-      showToast('Info', 'Menguji koneksi ke GitHub...', 'success');
-      
-      const testUrl = `https://api.github.com/repos/${owner}/${repo}`;
-      try {
-        const res = await fetch(testUrl, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/vnd.github.v3+json'
-          }
-        });
-        
-        if (!res.ok) {
-          if (res.status === 404) {
-            throw new Error('Repository tidak ditemukan');
-          } else if (res.status === 401) {
-            throw new Error('Token tidak valid');
-          } else {
-            throw new Error(`HTTP ${res.status}`);
-          }
-        }
-        
-        const repoData = await res.json();
-        console.log('Repository found:', repoData.full_name);
-        
-        // Save config
-        if (saveGitHubConfig(owner, repo, token, branch)) {
-          closeConfigModal();
-          showToast('Berhasil', 'Konfigurasi GitHub berhasil disimpan!', 'success');
-          
-          // Reload data from GitHub
-          tasks = await loadDataFromGitHub();
-          renderTasks();
-        }
-        
-      } catch (error) {
-        console.error('Config test failed:', error);
-        showToast('Error', 'Gagal terhubung: ' + error.message, 'error');
-      }
-    }
-  </script>
+  init();
+</script>
 </body>
-</html>group">
-          <label for="title">Judul Pekerjaan</label>
-          <input type="text" id="title" placeholder="Masukkan judul pekerjaan..." required>
-        </div>
-        <div class="form-group">
-          <label for="description">Deskripsi</label>
-          <textarea id="description" placeholder="Jelaskan detail pekerjaan..."></textarea>
-        </div>
-        <div class="form-group">
-          <label for="deadline">Deadline</label>
-          <input type="date" id="deadline" required>
-        </div>
-        <div class="form-
+</html>
