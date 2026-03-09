@@ -1,118 +1,117 @@
 /**
- * ═══════════════════════════════════════════════════════════════
- *  LAPORAN KERJA — Backend Server
- *  Jalankan: node server.js
- *  Akses UI : http://localhost:3000
- * ═══════════════════════════════════════════════════════════════
+ * ╔══════════════════════════════════════════════════════════════╗
+ *  LAPORAN KERJA — All-in-One (1 file saja, tanpa npm install)
+ *
+ *  Cara pakai:
+ *   1. Edit CONFIG di bawah (isi token, username, nama repo)
+ *   2. Jalankan di terminal: node server.js
+ *   3. Buka browser: http://localhost:3000
+ * ╚══════════════════════════════════════════════════════════════╝
  */
 
-const http    = require('http');
-const https   = require('https');
-const fs      = require('fs');
-const path    = require('path');
-const url     = require('url');
+'use strict';
+const http  = require('http');
+const https = require('https');
+const fs    = require('fs');
+const path  = require('path');
+const url   = require('url');
 
-// ── CONFIG ──────────────────────────────────────────────────────
-// Edit bagian ini sesuai akun GitHub Anda
+// ═══════════════════════════════════════════════════
+//  ⚙️  EDIT BAGIAN INI — isi sesuai akun GitHub Anda
+// ═══════════════════════════════════════════════════
 const CONFIG = {
-  PORT        : 3000,
-  DATA_FILE   : path.join(__dirname, 'data.json'),
-  LOG_FILE    : path.join(__dirname, 'sync.log'),
+  PORT         : 3000,
+  DATA_FILE    : path.join(__dirname, 'data.json'),
+  LOG_FILE     : path.join(__dirname, 'sync.log'),
+  SYNC_INTERVAL: 30_000,   // auto-sync ke GitHub tiap 30 detik
 
-  // === KONFIGURASI GITHUB — ISI SEKALI SAJA ===
-  GITHUB_TOKEN : process.env.GITHUB_TOKEN || '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',
-  GITHUB_OWNER : process.env.GITHUB_OWNER || 'kiralzaky01-tech',
-  GITHUB_REPO  : process.env.GITHUB_REPO  || 'laporan-kerja.github.io',
-  GITHUB_PATH  : process.env.GITHUB_PATH  || 'data.json',
-  GITHUB_BRANCH: process.env.GITHUB_BRANCH|| 'main',
-  // ============================================
-
-  AUTO_SYNC_INTERVAL_MS: 30 * 1000, // Auto sync ke GitHub setiap 30 detik jika ada perubahan
+  // Cara dapat token:
+  // github.com → Settings → Developer Settings → Personal Access Tokens (classic)
+  // → Generate new token → centang "repo" → copy token-nya
+  GITHUB_TOKEN : process.env.GITHUB_TOKEN  || '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',   // ← ISI TOKEN ANDA DI SINI
+  GITHUB_OWNER : process.env.GITHUB_OWNER  || 'kiralzaky01-tech',
+  GITHUB_REPO  : process.env.GITHUB_REPO   || 'laporan-kerja.github.io',
+  GITHUB_PATH  : process.env.GITHUB_PATH   || 'data.json',
+  GITHUB_BRANCH: process.env.GITHUB_BRANCH || 'main',
 };
+// ═══════════════════════════════════════════════════
 
 // ── STATE ────────────────────────────────────────────────────────
-let pendingSync   = false;   // ada perubahan yang belum di-sync
-let lastSyncTime  = null;
-let syncStatus    = 'idle';  // 'idle' | 'syncing' | 'ok' | 'error'
-let lastSyncMsg   = 'Belum pernah sync';
+let pendingSync  = false;
+let lastSyncTime = null;
+let syncStatus   = 'idle';
+let lastSyncMsg  = 'Belum pernah sync';
 
-// ── HELPERS ──────────────────────────────────────────────────────
+// ── LOGGER ───────────────────────────────────────────────────────
 function log(msg) {
   const line = `[${new Date().toISOString()}] ${msg}`;
   console.log(line);
-  fs.appendFileSync(CONFIG.LOG_FILE, line + '\n');
+  try { fs.appendFileSync(CONFIG.LOG_FILE, line + '\n'); } catch(_) {}
 }
 
+// ── DATA ─────────────────────────────────────────────────────────
 function readData() {
   if (!fs.existsSync(CONFIG.DATA_FILE)) return [];
   try { return JSON.parse(fs.readFileSync(CONFIG.DATA_FILE, 'utf8')); }
-  catch (e) { log('ERROR read data: ' + e.message); return []; }
+  catch(e) { log('ERROR baca data: ' + e.message); return []; }
 }
-
 function writeData(arr) {
   fs.writeFileSync(CONFIG.DATA_FILE, JSON.stringify(arr, null, 2));
   pendingSync = true;
-  log(`Data disimpan lokal (${arr.length} item)`);
+  log('Disimpan lokal (' + arr.length + ' item)');
 }
 
-function cors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+// ── HTTP HELPER ──────────────────────────────────────────────────
+function setCors(res) {
+  res.setHeader('Access-Control-Allow-Origin','*');
+  res.setHeader('Access-Control-Allow-Methods','GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers','Content-Type');
 }
-
-function json(res, code, obj) {
-  cors(res);
-  res.writeHead(code, { 'Content-Type': 'application/json' });
+function sendJson(res, code, obj) {
+  setCors(res);
+  res.writeHead(code, {'Content-Type':'application/json; charset=utf-8'});
   res.end(JSON.stringify(obj));
 }
-
 function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', c => body += c);
-    req.on('end', () => {
-      try { resolve(body ? JSON.parse(body) : {}); }
-      catch (e) { reject(e); }
-    });
-    req.on('error', reject);
+  return new Promise((ok, fail) => {
+    let raw = '';
+    req.on('data', c => raw += c);
+    req.on('end',  () => { try { ok(raw ? JSON.parse(raw) : {}); } catch(e) { fail(e); } });
+    req.on('error', fail);
   });
 }
 
-// ── GITHUB SYNC ───────────────────────────────────────────────────
-function githubConfigured() {
-  return (
-    CONFIG.GITHUB_TOKEN !== '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' &&
-    CONFIG.GITHUB_OWNER !== 'kiralzaky01-tech' &&
-    CONFIG.GITHUB_REPO  !== 'laporan-kerja.github.io' &&
-    CONFIG.GITHUB_TOKEN.length > 10
-  );
+// ── GITHUB ───────────────────────────────────────────────────────
+function ghConfigured() {
+  return CONFIG.GITHUB_TOKEN.length > 10
+      && !CONFIG.GITHUB_TOKEN.startsWith('GANTI')
+      && !CONFIG.GITHUB_OWNER.startsWith('GANTI')
+      && !CONFIG.GITHUB_REPO.startsWith('GANTI');
 }
 
-function githubRequest(method, apiPath, body) {
-  return new Promise((resolve, reject) => {
+function ghRequest(method, apiPath, body) {
+  return new Promise((ok, fail) => {
     const payload = body ? JSON.stringify(body) : null;
-    const options = {
-      hostname: 'api.github.com',
-      path    : apiPath,
+    const req = https.request({
+      hostname : 'api.github.com',
+      path     : apiPath,
       method,
-      headers : {
-        'Authorization' : `token ${CONFIG.GITHUB_TOKEN}`,
+      headers  : {
+        'Authorization' : 'token ' + CONFIG.GITHUB_TOKEN,
         'Accept'        : 'application/vnd.github.v3+json',
-        'User-Agent'    : 'LaporanKerja-Server/1.0',
+        'User-Agent'    : 'LaporanKerja/1.0',
         'Content-Type'  : 'application/json',
-        ...(payload ? { 'Content-Length': Buffer.byteLength(payload) } : {}),
+        ...(payload ? {'Content-Length': Buffer.byteLength(payload)} : {}),
       },
-    };
-    const req = https.request(options, res => {
+    }, res => {
       let data = '';
       res.on('data', c => data += c);
-      res.on('end', () => {
-        try { resolve({ status: res.statusCode, body: JSON.parse(data) }); }
-        catch (e) { resolve({ status: res.statusCode, body: data }); }
+      res.on('end',  () => {
+        try { ok({status: res.statusCode, body: JSON.parse(data)}); }
+        catch(_) { ok({status: res.statusCode, body: data}); }
       });
     });
-    req.on('error', reject);
+    req.on('error', fail);
     if (payload) req.write(payload);
     req.end();
   });
@@ -120,98 +119,595 @@ function githubRequest(method, apiPath, body) {
 
 async function syncToGithub(forced = false) {
   if (!pendingSync && !forced) return;
-  if (!githubConfigured()) {
-    syncStatus = 'error';
-    lastSyncMsg = 'GitHub belum dikonfigurasi di server.js';
+  if (!ghConfigured()) {
+    syncStatus  = 'error';
+    lastSyncMsg = 'GitHub belum dikonfigurasi — edit CONFIG di server.js';
     return;
   }
-
+  if (!fs.existsSync(CONFIG.DATA_FILE)) return;
   syncStatus = 'syncing';
   log('Mulai sync ke GitHub...');
-
   try {
-    const apiPath = `/repos/${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/contents/${CONFIG.GITHUB_PATH}`;
-
-    // Cek SHA file yang ada
+    const apiPath = '/repos/' + CONFIG.GITHUB_OWNER + '/' + CONFIG.GITHUB_REPO + '/contents/' + CONFIG.GITHUB_PATH;
     let sha = null;
-    const checkRes = await githubRequest('GET', apiPath + `?ref=${CONFIG.GITHUB_BRANCH}`);
-    if (checkRes.status === 200) sha = checkRes.body.sha;
-
-    // Encode konten
-    const content  = fs.readFileSync(CONFIG.DATA_FILE, 'utf8');
-    const encoded  = Buffer.from(content).toString('base64');
-    const message  = `Auto-sync laporan kerja — ${new Date().toLocaleString('id-ID')}`;
-
-    const putBody  = { message, content: encoded, branch: CONFIG.GITHUB_BRANCH };
+    const chk = await ghRequest('GET', apiPath + '?ref=' + CONFIG.GITHUB_BRANCH);
+    if (chk.status === 200) sha = chk.body.sha;
+    const encoded = Buffer.from(fs.readFileSync(CONFIG.DATA_FILE,'utf8')).toString('base64');
+    const putBody = {
+      message : 'Auto-sync laporan kerja — ' + new Date().toLocaleString('id-ID'),
+      content : encoded,
+      branch  : CONFIG.GITHUB_BRANCH,
+    };
     if (sha) putBody.sha = sha;
-
-    const putRes = await githubRequest('PUT', apiPath, putBody);
-
-    if (putRes.status === 200 || putRes.status === 201) {
+    const put = await ghRequest('PUT', apiPath, putBody);
+    if (put.status === 200 || put.status === 201) {
       pendingSync  = false;
       lastSyncTime = new Date();
       syncStatus   = 'ok';
-      lastSyncMsg  = `Berhasil sync ke GitHub pada ${lastSyncTime.toLocaleString('id-ID')}`;
-      log('✅ Sync ke GitHub berhasil');
+      lastSyncMsg  = 'Berhasil sync ' + lastSyncTime.toLocaleString('id-ID');
+      log('✅ GitHub sync berhasil');
     } else {
       syncStatus  = 'error';
-      lastSyncMsg = `GitHub error ${putRes.status}: ${putRes.body?.message || 'Unknown'}`;
+      lastSyncMsg = 'GitHub error: ' + (put.body && put.body.message ? put.body.message : 'HTTP ' + put.status);
       log('❌ Sync gagal: ' + lastSyncMsg);
     }
-  } catch (e) {
+  } catch(e) {
     syncStatus  = 'error';
-    lastSyncMsg = 'Koneksi ke GitHub gagal: ' + e.message;
+    lastSyncMsg = 'Koneksi gagal: ' + e.message;
     log('❌ ' + lastSyncMsg);
   }
 }
 
-// Auto-sync setiap interval
-setInterval(() => { syncToGithub(); }, CONFIG.AUTO_SYNC_INTERVAL_MS);
+setInterval(() => syncToGithub(), CONFIG.SYNC_INTERVAL);
 
-// ── HTTP SERVER ────────────────────────────────────────────────────
+// ── FRONTEND HTML (embed langsung, tidak butuh file lain) ────────
+const HTML = `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Laporan Kerja</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f2f7;--surface:#fff;--dark:#0f172a;--navy:#1e293b;
+  --blue:#3b82f6;--green:#10b981;--green-dark:#059669;
+  --amber:#f59e0b;--amber-dark:#d97706;
+  --red:#ef4444;--red-dark:#dc2626;
+  --muted:#64748b;--border:#e2e8f0;
+  --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.05);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.13);
+}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--dark);min-height:100vh}
+.header{background:var(--dark);padding:0 32px;height:70px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 20px rgba(0,0,0,.3)}
+.header-left{display:flex;align-items:center;gap:14px}
+.header-icon{width:40px;height:40px;background:rgba(59,130,246,.2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px}
+.header-title{font-size:20px;font-weight:700;color:#fff}
+.header-date{font-size:13px;color:rgba(255,255,255,.45);margin-top:2px}
+.header-right{display:flex;align-items:center;gap:10px}
+.sync-pill{display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:100px;font-size:12px;font-weight:600;cursor:default;transition:all .3s;border:1px solid transparent}
+.sync-pill.idle   {background:rgba(255,255,255,.08);color:rgba(255,255,255,.5);border-color:rgba(255,255,255,.1)}
+.sync-pill.saving {background:rgba(59,130,246,.2);color:#93c5fd;border-color:rgba(59,130,246,.3)}
+.sync-pill.ok     {background:rgba(16,185,129,.15);color:#6ee7b7;border-color:rgba(16,185,129,.25)}
+.sync-pill.error  {background:rgba(239,68,68,.15);color:#fca5a5;border-color:rgba(239,68,68,.25)}
+.sync-pill.offline{background:rgba(245,158,11,.15);color:#fcd34d;border-color:rgba(245,158,11,.25)}
+.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sync-pill.idle   .sync-dot{background:rgba(255,255,255,.3)}
+.sync-pill.saving .sync-dot{background:#3b82f6;animation:blink .8s infinite}
+.sync-pill.ok     .sync-dot{background:#10b981}
+.sync-pill.error  .sync-dot{background:#ef4444}
+.sync-pill.offline .sync-dot{background:#f59e0b;animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.btn-tambah{display:flex;align-items:center;gap:8px;background:var(--surface);color:var(--dark);border:none;padding:10px 22px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+.btn-tambah:hover{background:#f1f5f9;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.main{max-width:1100px;margin:0 auto;padding:32px 24px}
+.server-banner{display:flex;align-items:center;gap:14px;border-radius:14px;padding:14px 20px;margin-bottom:24px;font-size:13px;border:1px solid}
+.server-banner.connected   {background:#f0fdf4;border-color:#bbf7d0;color:#166534}
+.server-banner.disconnected{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
+.server-banner.checking    {background:#f8fafc;border-color:var(--border);color:var(--muted)}
+.banner-icon{font-size:22px;flex-shrink:0}
+.banner-title{font-weight:700;font-size:14px}
+.banner-sub{font-size:12px;opacity:.75;margin-top:2px}
+.banner-right{margin-left:auto}
+.btn-retry{padding:6px 14px;border-radius:8px;border:1.5px solid currentColor;background:transparent;font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;color:inherit;transition:all .2s}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.stat-card{background:var(--surface);border-radius:16px;padding:20px 22px;display:flex;align-items:center;gap:16px;box-shadow:var(--shadow);border:1px solid var(--border);transition:transform .2s}
+.stat-card:hover{transform:translateY(-2px)}
+.stat-icon-wrap{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.stat-icon-total{background:#f1f5f9}.stat-icon-selesai{background:#d1fae5}.stat-icon-pending{background:#fef3c7}.stat-icon-terlambat{background:#fee2e2}
+.stat-num{font-size:28px;font-weight:800;line-height:1;color:var(--dark)}
+.stat-label{font-size:12px;color:var(--muted);font-weight:500;margin-top:3px}
+.filter-row{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap}
+.filter-btn{padding:9px 20px;border-radius:100px;border:1px solid var(--border);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;background:var(--surface);color:var(--muted)}
+.filter-btn:hover{border-color:var(--blue);color:var(--blue)}
+.filter-btn.active{background:var(--dark);color:#fff;border-color:var(--dark)}
+.search-wrap{position:relative;margin-bottom:20px}
+.search-wrap input{width:100%;padding:12px 16px 12px 44px;border:1px solid var(--border);border-radius:12px;font-family:inherit;font-size:14px;background:var(--surface);color:var(--dark);outline:none;transition:border-color .2s,box-shadow .2s}
+.search-wrap input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:16px}
+.auto-notice{display:flex;align-items:center;gap:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px 16px;font-size:13px;color:#9a3412;font-weight:500;margin-bottom:20px;animation:slideIn .3s ease}
+.list-wrap{display:flex;flex-direction:column;gap:12px}
+.empty-state{text-align:center;padding:80px 20px;color:var(--muted)}
+.empty-state svg{margin-bottom:16px;opacity:.3}
+.empty-state p{font-size:15px}
+.pekerjaan-card{background:var(--surface);border-radius:16px;border:1px solid var(--border);box-shadow:var(--shadow);overflow:hidden;transition:all .25s;animation:slideIn .3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.pekerjaan-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-2px)}
+.pekerjaan-card.card-terlambat{border-color:#fca5a5;box-shadow:0 0 0 1px #fca5a5,var(--shadow)}
+.card-inner{display:flex;align-items:flex-start}
+.card-accent{width:5px;align-self:stretch;flex-shrink:0;min-height:80px}
+.accent-pending{background:var(--amber)}.accent-selesai{background:var(--green)}.accent-terlambat{background:var(--red)}
+.card-content{flex:1;padding:18px 20px 14px 20px;min-width:0}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px}
+.card-title{font-size:16px;font-weight:700;color:var(--dark);line-height:1.3}
+.card-top-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.card-badge{padding:4px 12px;border-radius:100px;font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;gap:5px}
+.badge-pending{background:#fef3c7;color:#92400e}.badge-selesai{background:#d1fae5;color:#065f46}.badge-terlambat{background:#fee2e2;color:#991b1b}
+.badge-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.badge-pending .badge-dot{background:var(--amber)}.badge-selesai .badge-dot{background:var(--green)}
+.badge-terlambat .badge-dot{background:var(--red);animation:blink 1.2s infinite}
+.card-desc{font-size:13px;color:var(--muted);margin-bottom:10px;line-height:1.6}
+.card-meta{display:flex;flex-wrap:wrap;gap:14px}
+.meta-item{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);font-weight:500}
+.deadline-overdue{color:var(--red)!important;font-weight:700!important}
+.countdown-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px;margin-left:6px}
+.chip-ok{background:#d1fae5;color:#065f46}.chip-warn{background:#fef3c7;color:#92400e}.chip-overdue{background:#fee2e2;color:#991b1b}
+.action-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .18s}
+.action-btn:hover{background:#e2e8f0;transform:scale(1.1)}
+.action-btn.delete:hover{background:#fee2e2;border-color:#fca5a5}
+.status-btn-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 20px 14px 25px;background:#f8fafc;border-top:1px solid var(--border)}
+.status-label-text{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-right:4px;flex-shrink:0}
+.status-indicator{padding:6px 14px;border-radius:8px;border:1.5px dashed transparent;font-family:inherit;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:default;user-select:none;pointer-events:none}
+.ind-pending-active  {background:var(--amber);color:#fff;border-color:var(--amber-dark);box-shadow:0 4px 10px rgba(245,158,11,.3)}
+.ind-pending-inactive{background:#fef9ec;color:#b8860b;border-color:#fde68a;opacity:.55}
+.ind-terlambat-active  {background:var(--red);color:#fff;border-color:var(--red-dark);box-shadow:0 4px 10px rgba(239,68,68,.3)}
+.ind-terlambat-inactive{background:#fff5f5;color:#c0392b;border-color:#fecaca;opacity:.55}
+.sbtn-selesai{padding:6px 18px;border-radius:8px;border:2px solid #a7f3d0;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;display:flex;align-items:center;gap:6px;background:#d1fae5;color:#065f46}
+.sbtn-selesai:hover:not(.sbtn-active):not(.sbtn-disabled){background:#a7f3d0;border-color:var(--green);transform:translateY(-2px);box-shadow:0 4px 12px rgba(16,185,129,.25)}
+.sbtn-selesai.sbtn-active{background:var(--green);color:#fff;border-color:var(--green-dark);box-shadow:0 4px 12px rgba(16,185,129,.4);cursor:default}
+.sbtn-selesai.sbtn-disabled{background:#f1f5f9;color:#94a3b8;border-color:#e2e8f0;cursor:not-allowed;opacity:.6;pointer-events:none}
+.tip-wrap{position:relative;display:inline-flex}
+.tip-wrap .tip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--dark);color:#fff;font-size:11px;padding:5px 10px;border-radius:7px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .2s;z-index:10}
+.tip-wrap .tip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--dark)}
+.tip-wrap:hover .tip{opacity:1}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--surface);border-radius:20px;width:100%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,.3);transform:translateY(20px) scale(.97);transition:transform .25s cubic-bezier(.34,1.56,.64,1);max-height:90vh;overflow-y:auto}
+.modal-overlay.open .modal{transform:translateY(0) scale(1)}
+.modal-header{padding:24px 28px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:18px;font-weight:700;color:var(--dark)}
+.modal-close{width:32px;height:32px;border-radius:8px;border:none;background:var(--bg);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.modal-close:hover{background:#e2e8f0}
+.modal-body{padding:24px 28px;display:flex;flex-direction:column;gap:18px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+label{font-size:13px;font-weight:600;color:var(--navy)}
+input[type=text],input[type=date],input[type=number],textarea{padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-family:inherit;font-size:14px;color:var(--dark);outline:none;background:var(--surface);transition:border-color .2s,box-shadow .2s;width:100%}
+input:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+textarea{resize:vertical;min-height:90px}
+.modal-footer{padding:16px 28px 24px;display:flex;gap:12px}
+.btn-batal{flex:1;padding:12px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .2s}
+.btn-batal:hover{background:var(--bg)}
+.btn-submit{flex:2;padding:12px;border-radius:10px;border:none;background:var(--dark);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-submit:hover{background:#1e3a5f;transform:translateY(-1px);box-shadow:0 6px 16px rgba(15,23,42,.35)}
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s}
+.confirm-overlay.open{opacity:1;pointer-events:all}
+.confirm-box{background:var(--surface);border-radius:16px;padding:28px;max-width:360px;width:100%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.confirm-icon{font-size:36px;margin-bottom:12px}
+.confirm-title{font-size:17px;font-weight:700;margin-bottom:8px}
+.confirm-sub{font-size:14px;color:var(--muted);margin-bottom:24px}
+.confirm-btns{display:flex;gap:12px}
+.confirm-cancel{flex:1;padding:11px;border-radius:10px;border:1.5px solid var(--border);background:transparent;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;color:var(--muted);transition:background .2s}
+.confirm-cancel:hover{background:var(--bg)}
+.confirm-delete{flex:1;padding:11px;border-radius:10px;border:none;background:var(--red);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s}
+.confirm-delete:hover{background:#dc2626}
+.toast{position:fixed;bottom:28px;right:28px;background:var(--dark);color:#fff;padding:14px 20px;border-radius:12px;font-size:14px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .35s cubic-bezier(.34,1.56,.64,1);box-shadow:0 8px 24px rgba(0,0,0,.3);max-width:380px}
+.toast.show{transform:translateY(0);opacity:1}
+@media(max-width:768px){.stats-grid{grid-template-columns:repeat(2,1fr)}.header{padding:0 16px}.main{padding:20px 16px}.form-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <div class="header-icon">📋</div>
+    <div>
+      <div class="header-title">Laporan Kerja</div>
+      <div class="header-date" id="headerDate"></div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="sync-pill idle" id="syncPill">
+      <div class="sync-dot"></div>
+      <span id="syncText">Menghubungkan...</span>
+    </div>
+    <button class="btn-tambah" onclick="openModal()">＋ Tambah</button>
+  </div>
+</header>
+
+<div class="main">
+  <div class="server-banner checking" id="serverBanner">
+    <div class="banner-icon">🔄</div>
+    <div><div class="banner-title">Menghubungkan ke server...</div><div class="banner-sub">Memuat data</div></div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon-wrap stat-icon-total">📄</div><div><div class="stat-num" id="statTotal">0</div><div class="stat-label">Total</div></div></div>
+    <div class="stat-card"><div class="stat-icon-wrap stat-icon-selesai">✅</div><div><div class="stat-num" id="statSelesai">0</div><div class="stat-label">Selesai</div></div></div>
+    <div class="stat-card"><div class="stat-icon-wrap stat-icon-pending">🕐</div><div><div class="stat-num" id="statPending">0</div><div class="stat-label">Pending</div></div></div>
+    <div class="stat-card"><div class="stat-icon-wrap stat-icon-terlambat">⚠️</div><div><div class="stat-num" id="statTerlambat">0</div><div class="stat-label">Terlambat</div></div></div>
+  </div>
+
+  <div class="filter-row">
+    <button class="filter-btn active" data-filter="semua"     onclick="setFilter('semua')">Semua (<span id="fSemua">0</span>)</button>
+    <button class="filter-btn"        data-filter="pending"   onclick="setFilter('pending')">Pending (<span id="fPending">0</span>)</button>
+    <button class="filter-btn"        data-filter="selesai"   onclick="setFilter('selesai')">Selesai (<span id="fSelesai">0</span>)</button>
+    <button class="filter-btn"        data-filter="terlambat" onclick="setFilter('terlambat')">Terlambat (<span id="fTerlambat">0</span>)</button>
+  </div>
+
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Cari pekerjaan..." oninput="renderList()">
+  </div>
+
+  <div id="autoNotice" style="display:none" class="auto-notice">
+    ⏰ <span id="autoNoticeText"></span>
+  </div>
+
+  <div class="list-wrap" id="listWrap"></div>
+</div>
+
+<!-- MODAL TAMBAH/EDIT -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Tambah Pekerjaan Baru</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label>Judul Pekerjaan *</label><input type="text" id="fJudul" placeholder="Masukkan judul pekerjaan"></div>
+      <div class="form-group"><label>Deskripsi</label><textarea id="fDeskripsi" placeholder="Masukkan deskripsi"></textarea></div>
+      <div class="form-group"><label>Deadline</label><input type="date" id="fDeadline"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Unit</label><input type="text" id="fUnit" placeholder="Unit kerja"></div>
+        <div class="form-group"><label>Alamat</label><input type="text" id="fAlamat" placeholder="Lokasi"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Jumlah Kendaraan</label><input type="number" id="fKendaraan" value="0" min="0"></div>
+        <div class="form-group"><label>Jumlah Personel</label><input type="number" id="fPersonel" value="0" min="0"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-batal" onclick="closeModal()">Batal</button>
+      <button class="btn-submit" id="btnSubmit" onclick="savePekerjaan()">Tambah Pekerjaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-title">Hapus Pekerjaan?</div>
+    <div class="confirm-sub">Tindakan ini tidak dapat dibatalkan.</div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" onclick="closeConfirm()">Batal</button>
+      <button class="confirm-delete" onclick="confirmDelete()">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';   // kosong = sama server, tidak perlu ganti
+const DEBOUNCE = 800;
+
+let data = [], currentFilter = 'semua', editingId = null, deletingId = null;
+let serverOnline = false, saveTimer = null;
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function daysUntil(dl) {
+  if (!dl) return null;
+  const t = new Date(); t.setHours(0,0,0,0);
+  const d = new Date(dl); d.setHours(0,0,0,0);
+  return Math.round((d-t)/86400000);
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function setSyncPill(state, text) {
+  const p = document.getElementById('syncPill');
+  p.className = 'sync-pill '+state;
+  document.getElementById('syncText').textContent = text;
+}
+function setBanner(type, icon, title, sub, retry) {
+  const b = document.getElementById('serverBanner');
+  b.className = 'server-banner '+type;
+  b.innerHTML = '<div class="banner-icon">'+icon+'</div>'
+    +'<div><div class="banner-title">'+title+'</div><div class="banner-sub">'+sub+'</div></div>'
+    +(retry ? '<div class="banner-right"><button class="btn-retry" onclick="init()">Coba Lagi</button></div>' : '');
+}
+
+async function loadFromServer() {
+  setBanner('checking','🔄','Menghubungkan...','Memuat data dari server');
+  setSyncPill('saving','Memuat...');
+  try {
+    const r  = await fetch('/api/data', {signal: AbortSignal.timeout(4000)});
+    const b  = await r.json();
+    if (!r.ok) throw new Error(b.msg||'Error');
+    data = b.data || [];
+    serverOnline = true;
+    const sr = await fetch('/api/status', {signal: AbortSignal.timeout(3000)});
+    const s  = await sr.json();
+    if (s.githubConfigured) {
+      setBanner('connected','🟢','Server terhubung & GitHub aktif',
+        'Auto-sync ke '+s.config.owner+'/'+s.config.repo+' · '+s.lastSyncMsg);
+    } else {
+      setBanner('connected','🟡','Server terhubung — GitHub belum dikonfigurasi',
+        'Edit CONFIG di server.js untuk aktifkan sync ke GitHub');
+    }
+    setSyncPill('ok','Tersimpan');
+    checkAutoTerlambat(); updateStats(); renderList();
+  } catch(e) {
+    serverOnline = false;
+    data = JSON.parse(localStorage.getItem('laporanKerja')||'[]');
+    setBanner('disconnected','🔴','Server tidak terhubung — Mode Offline',
+      'Jalankan: node server.js  kemudian refresh halaman ini', true);
+    setSyncPill('offline','Mode Offline');
+    checkAutoTerlambat(); updateStats(); renderList();
+  }
+}
+
+function scheduleSave() {
+  setSyncPill('saving','Menyimpan...');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(pushToServer, DEBOUNCE);
+}
+async function pushToServer() {
+  localStorage.setItem('laporanKerja', JSON.stringify(data));
+  if (!serverOnline) { setSyncPill('offline','Offline — lokal saja'); return; }
+  try {
+    const r = await fetch('/api/data', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({data}), signal: AbortSignal.timeout(5000),
+    });
+    const b = await r.json();
+    if (r.ok) setSyncPill('ok','Tersimpan '+new Date().toLocaleTimeString('id-ID'));
+    else throw new Error(b.msg);
+  } catch(e) { setSyncPill('error','Gagal menyimpan'); }
+}
+
+function checkAutoTerlambat() {
+  const today = todayStr(); let changed = 0;
+  data.forEach(d => {
+    if (d.status==='pending' && d.deadline && d.deadline < today) { d.status='terlambat'; changed++; }
+  });
+  if (changed > 0) {
+    scheduleSave();
+    const el = document.getElementById('autoNotice');
+    document.getElementById('autoNoticeText').textContent =
+      changed+' pekerjaan otomatis ditandai Terlambat karena deadline telah lewat.';
+    el.style.display='flex';
+    setTimeout(()=>{ el.style.display='none'; }, 7000);
+  }
+}
+
+function updateStats() {
+  const tot = data.length;
+  const sel = data.filter(d=>d.status==='selesai').length;
+  const pen = data.filter(d=>d.status==='pending').length;
+  const ter = data.filter(d=>d.status==='terlambat').length;
+  document.getElementById('statTotal').textContent=tot;
+  document.getElementById('statSelesai').textContent=sel;
+  document.getElementById('statPending').textContent=pen;
+  document.getElementById('statTerlambat').textContent=ter;
+  document.getElementById('fSemua').textContent=tot;
+  document.getElementById('fPending').textContent=pen;
+  document.getElementById('fSelesai').textContent=sel;
+  document.getElementById('fTerlambat').textContent=ter;
+}
+
+function setFilter(f) {
+  currentFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b.dataset.filter===f));
+  renderList();
+}
+
+function renderList() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  let list = [...data];
+  if (currentFilter!=='semua') list=list.filter(d=>d.status===currentFilter);
+  if (q) list=list.filter(d=>
+    d.judul.toLowerCase().includes(q)||
+    (d.deskripsi||'').toLowerCase().includes(q)||
+    (d.unit||'').toLowerCase().includes(q)
+  );
+  const wrap = document.getElementById('listWrap');
+  if (!list.length) {
+    wrap.innerHTML='<div class="empty-state"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="15" x2="12" y2="15"/></svg><p>Belum ada pekerjaan. Klik "+ Tambah" untuk memulai.</p></div>';
+    return;
+  }
+  wrap.innerHTML = list.map(d => {
+    const days  = daysUntil(d.deadline);
+    const dlStr = d.deadline ? new Date(d.deadline).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}) : null;
+    let chip = '';
+    if (d.deadline && d.status!=='selesai') {
+      if      (days<0)   chip='<span class="countdown-chip chip-overdue">⚠ Lewat '+Math.abs(days)+' hari</span>';
+      else if (days===0) chip='<span class="countdown-chip chip-warn">⏰ Hari ini!</span>';
+      else if (days<=3)  chip='<span class="countdown-chip chip-warn">⏰ '+days+' hari lagi</span>';
+      else               chip='<span class="countdown-chip chip-ok">✓ '+days+' hari lagi</span>';
+    }
+    const dlCls  = (days!==null&&days<0&&d.status!=='selesai')?'deadline-overdue':'';
+    const lbl    = {pending:'Pending',selesai:'Selesai',terlambat:'Terlambat'}[d.status];
+    const isTer  = d.status==='terlambat';
+    const isSel  = d.status==='selesai';
+    let selesaiBtn = '';
+    if (isTer)      selesaiBtn = '<div class="tip-wrap"><button class="sbtn-selesai sbtn-disabled" disabled>🚫 Selesai</button><div class="tip">Tidak bisa — deadline sudah lewat</div></div>';
+    else if (isSel) selesaiBtn = '<button class="sbtn-selesai sbtn-active" disabled>✅ Selesai</button>';
+    else            selesaiBtn = '<button class="sbtn-selesai" onclick="changeStatus(\''+d.id+'\',\'selesai\')">✅ Selesai</button>';
+
+    return '<div class="pekerjaan-card'+(isTer?' card-terlambat':'')+'" id="card-'+d.id+'">'
+      +'<div class="card-inner">'
+      +'<div class="card-accent accent-'+d.status+'"></div>'
+      +'<div class="card-content">'
+      +'<div class="card-top">'
+      +'<div class="card-title">'+esc(d.judul)+'</div>'
+      +'<div class="card-top-right">'
+      +'<span class="card-badge badge-'+d.status+'"><span class="badge-dot"></span>'+lbl+'</span>'
+      +'<button class="action-btn" onclick="openEdit(\''+d.id+'\')" title="Edit">✏️</button>'
+      +'<button class="action-btn delete" onclick="openConfirm(\''+d.id+'\')" title="Hapus">🗑️</button>'
+      +'</div></div>'
+      +(d.deskripsi?'<div class="card-desc">'+esc(d.deskripsi)+'</div>':'')
+      +'<div class="card-meta">'
+      +(dlStr?'<div class="meta-item '+dlCls+'">📅 '+dlStr+chip+'</div>':'')
+      +(d.unit?'<div class="meta-item">🏢 '+esc(d.unit)+'</div>':'')
+      +(d.alamat?'<div class="meta-item">📍 '+esc(d.alamat)+'</div>':'')
+      +(d.kendaraan>0?'<div class="meta-item">🚗 '+d.kendaraan+' kendaraan</div>':'')
+      +(d.personel>0?'<div class="meta-item">👥 '+d.personel+' personel</div>':'')
+      +'</div></div></div>'
+      +'<div class="status-btn-row">'
+      +'<span class="status-label-text">Status:</span>'
+      +'<span class="status-indicator '+(d.status==='pending'?'ind-pending-active':'ind-pending-inactive')+'">🕐 Pending</span>'
+      +selesaiBtn
+      +'<span class="status-indicator '+(isTer?'ind-terlambat-active':'ind-terlambat-inactive')+'">⚠️ Terlambat</span>'
+      +'</div></div>';
+  }).join('');
+}
+
+function changeStatus(id, newStatus) {
+  if (newStatus!=='selesai') return;
+  const d = data.find(x=>x.id===id);
+  if (!d||d.status==='terlambat'||d.status==='selesai') return;
+  d.status='selesai'; scheduleSave(); updateStats(); renderList();
+  showToast('✅ Pekerjaan ditandai Selesai!');
+}
+
+function openModal() {
+  editingId=null;
+  document.getElementById('modalTitle').textContent='Tambah Pekerjaan Baru';
+  document.getElementById('btnSubmit').textContent='Tambah Pekerjaan';
+  clearForm();
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function openEdit(id) {
+  const d=data.find(x=>x.id===id); if (!d) return;
+  editingId=id;
+  document.getElementById('modalTitle').textContent='Edit Pekerjaan';
+  document.getElementById('btnSubmit').textContent='Simpan Perubahan';
+  document.getElementById('fJudul').value    =d.judul    ||'';
+  document.getElementById('fDeskripsi').value=d.deskripsi||'';
+  document.getElementById('fDeadline').value =d.deadline ||'';
+  document.getElementById('fUnit').value     =d.unit     ||'';
+  document.getElementById('fAlamat').value   =d.alamat   ||'';
+  document.getElementById('fKendaraan').value=d.kendaraan||0;
+  document.getElementById('fPersonel').value =d.personel ||0;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+function clearForm() {
+  ['fJudul','fDeskripsi','fDeadline','fUnit','fAlamat'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fKendaraan').value=0;
+  document.getElementById('fPersonel').value=0;
+}
+function savePekerjaan() {
+  const judul = document.getElementById('fJudul').value.trim();
+  if (!judul) {
+    const el=document.getElementById('fJudul');
+    el.focus(); el.style.borderColor='var(--red)';
+    setTimeout(()=>el.style.borderColor='',1500); return;
+  }
+  const deadline = document.getElementById('fDeadline').value;
+  const entry = {
+    judul, deadline,
+    deskripsi: document.getElementById('fDeskripsi').value.trim(),
+    unit     : document.getElementById('fUnit').value.trim(),
+    alamat   : document.getElementById('fAlamat').value.trim(),
+    kendaraan: parseInt(document.getElementById('fKendaraan').value)||0,
+    personel : parseInt(document.getElementById('fPersonel').value)||0,
+  };
+  if (editingId) {
+    const idx=data.findIndex(x=>x.id===editingId);
+    if (idx!==-1) {
+      let st=data[idx].status;
+      if (st==='pending'&&deadline&&deadline<todayStr()) st='terlambat';
+      data[idx]={...data[idx],...entry,status:st};
+    }
+    showToast('✅ Pekerjaan diperbarui');
+  } else {
+    const st=(deadline&&deadline<todayStr())?'terlambat':'pending';
+    entry.id='pk_'+Date.now(); entry.createdAt=new Date().toISOString(); entry.status=st;
+    data.unshift(entry);
+    showToast(st==='terlambat'?'⚠️ Ditambahkan — deadline sudah lewat':'✅ Pekerjaan berhasil ditambahkan');
+  }
+  scheduleSave(); updateStats(); renderList(); closeModal();
+}
+
+function openConfirm(id)  { deletingId=id; document.getElementById('confirmOverlay').classList.add('open'); }
+function closeConfirm()   { deletingId=null; document.getElementById('confirmOverlay').classList.remove('open'); }
+function confirmDelete()  {
+  data=data.filter(x=>x.id!==deletingId);
+  scheduleSave(); updateStats(); renderList(); closeConfirm();
+  showToast('🗑️ Pekerjaan dihapus');
+}
+
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+document.getElementById('modalOverlay').addEventListener('click',e=>{ if(e.target===document.getElementById('modalOverlay')) closeModal(); });
+document.getElementById('confirmOverlay').addEventListener('click',e=>{ if(e.target===document.getElementById('confirmOverlay')) closeConfirm(); });
+
+async function init() {
+  document.getElementById('headerDate').textContent =
+    new Date().toLocaleDateString('id-ID',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  await loadFromServer();
+  setInterval(()=>{ checkAutoTerlambat(); updateStats(); renderList(); }, 60000);
+}
+
+init();
+</script>
+</body>
+</html>`;
+
+// ── HTTP SERVER ───────────────────────────────────────────────────
 const server = http.createServer(async (req, res) => {
-  const parsed  = url.parse(req.url, true);
-  const pathname = parsed.pathname;
+  const { pathname } = url.parse(req.url);
 
-  // Preflight CORS
-  if (req.method === 'OPTIONS') { cors(res); res.writeHead(204); res.end(); return; }
+  if (req.method === 'OPTIONS') { setCors(res); res.writeHead(204); res.end(); return; }
 
-  // ── API ROUTES ──────────────────────────────────────────────────
-
-  // GET /api/data — ambil semua data
   if (req.method === 'GET' && pathname === '/api/data') {
-    return json(res, 200, { ok: true, data: readData() });
+    return sendJson(res, 200, { ok: true, data: readData() });
   }
 
-  // POST /api/data — simpan semua data (replace)
   if (req.method === 'POST' && pathname === '/api/data') {
     try {
       const body = await readBody(req);
-      if (!Array.isArray(body.data)) return json(res, 400, { ok: false, msg: 'data harus array' });
+      if (!Array.isArray(body.data)) return sendJson(res, 400, { ok: false, msg: 'data harus array' });
       writeData(body.data);
-      return json(res, 200, { ok: true, msg: 'Tersimpan', count: body.data.length });
-    } catch (e) {
-      return json(res, 400, { ok: false, msg: e.message });
-    }
+      return sendJson(res, 200, { ok: true, msg: 'Tersimpan', count: body.data.length });
+    } catch(e) { return sendJson(res, 400, { ok: false, msg: e.message }); }
   }
 
-  // POST /api/sync — paksa sync ke GitHub sekarang
   if (req.method === 'POST' && pathname === '/api/sync') {
     pendingSync = true;
     syncToGithub(true).catch(() => {});
-    return json(res, 200, { ok: true, msg: 'Sync dimulai...' });
+    return sendJson(res, 200, { ok: true, msg: 'Sync dimulai...' });
   }
 
-  // GET /api/status — status server + sync
   if (req.method === 'GET' && pathname === '/api/status') {
-    return json(res, 200, {
+    return sendJson(res, 200, {
       ok: true,
-      server: 'running',
-      syncStatus,
-      lastSyncMsg,
-      lastSyncTime : lastSyncTime ? lastSyncTime.toISOString() : null,
-      pendingSync,
-      githubConfigured: githubConfigured(),
+      syncStatus, lastSyncMsg, pendingSync,
+      lastSyncTime    : lastSyncTime ? lastSyncTime.toISOString() : null,
+      githubConfigured: ghConfigured(),
       config: {
         owner : CONFIG.GITHUB_OWNER,
         repo  : CONFIG.GITHUB_REPO,
@@ -221,37 +717,32 @@ const server = http.createServer(async (req, res) => {
     });
   }
 
-  // ── SERVE FRONTEND HTML ──────────────────────────────────────────
-  if (req.method === 'GET' && (pathname === '/' || pathname === '/index.html')) {
-    const htmlPath = path.join(__dirname, 'index.html');
-    if (fs.existsSync(htmlPath)) {
-      cors(res);
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end(fs.readFileSync(htmlPath));
-    } else {
-      res.writeHead(404); res.end('index.html tidak ditemukan');
-    }
+  // Semua route lain → tampilkan frontend
+  if (req.method === 'GET') {
+    setCors(res);
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+    res.end(HTML);
     return;
   }
 
-  // 404
-  json(res, 404, { ok: false, msg: 'Route tidak ditemukan' });
+  sendJson(res, 404, { ok: false, msg: 'Route tidak ditemukan' });
 });
 
 server.listen(CONFIG.PORT, () => {
-  log(`\n${'═'.repeat(55)}`);
-  log(`  🚀 Laporan Kerja Server berjalan`);
-  log(`  📡 URL   : http://localhost:${CONFIG.PORT}`);
-  log(`  📁 Data  : ${CONFIG.DATA_FILE}`);
-  log(`  🐙 GitHub: ${githubConfigured()
-    ? `${CONFIG.GITHUB_OWNER}/${CONFIG.GITHUB_REPO}/${CONFIG.GITHUB_PATH}`
-    : '⚠ BELUM DIKONFIGURASI — edit CONFIG di server.js'}`);
-  log(`  🔄 Auto-sync setiap ${CONFIG.AUTO_SYNC_INTERVAL_MS / 1000} detik`);
-  log(`${'═'.repeat(55)}\n`);
+  const div = '═'.repeat(52);
+  log('\n' + div);
+  log('  🚀 Laporan Kerja Server siap!');
+  log('  🌐 Buka browser: http://localhost:' + CONFIG.PORT);
+  log('  📁 Data file  : ' + CONFIG.DATA_FILE);
+  log('  🐙 GitHub     : ' + (ghConfigured()
+    ? CONFIG.GITHUB_OWNER + '/' + CONFIG.GITHUB_REPO + '/' + CONFIG.GITHUB_PATH
+    : '⚠  BELUM DIKONFIGURASI — edit CONFIG di atas'));
+  log('  🔄 Auto-sync  : setiap ' + CONFIG.SYNC_INTERVAL/1000 + ' detik');
+  log(div + '\n');
 });
 
 process.on('SIGINT', async () => {
-  log('\nServer berhenti — sync terakhir sebelum keluar...');
+  log('\nServer berhenti — menyimpan terakhir ke GitHub...');
   if (pendingSync) await syncToGithub(true);
   process.exit(0);
 });
