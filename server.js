@@ -20,9 +20,9 @@ const CONFIG = {
   LOG_FILE    : path.join(__dirname, 'sync.log'),
 
   // === KONFIGURASI GITHUB — ISI SEKALI SAJA ===
-  GITHUB_TOKEN : process.env.GITHUB_TOKEN || 'GANTI_DENGAN_TOKEN_ANDA',
-  GITHUB_OWNER : process.env.GITHUB_OWNER || 'GANTI_DENGAN_USERNAME',
-  GITHUB_REPO  : process.env.GITHUB_REPO  || 'GANTI_DENGAN_NAMA_REPO',
+  GITHUB_TOKEN : process.env.GITHUB_TOKEN || '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',
+  GITHUB_OWNER : process.env.GITHUB_OWNER || 'kiralzaky01-tech',
+  GITHUB_REPO  : process.env.GITHUB_REPO  || 'laporan-kerja.github.io',
   GITHUB_PATH  : process.env.GITHUB_PATH  || 'data.json',
   GITHUB_BRANCH: process.env.GITHUB_BRANCH|| 'main',
   // ============================================
@@ -82,9 +82,9 @@ function readBody(req) {
 // ── GITHUB SYNC ───────────────────────────────────────────────────
 function githubConfigured() {
   return (
-    CONFIG.GITHUB_TOKEN !== 'GANTI_DENGAN_TOKEN_ANDA' &&
-    CONFIG.GITHUB_OWNER !== 'GANTI_DENGAN_USERNAME' &&
-    CONFIG.GITHUB_REPO  !== 'GANTI_DENGAN_NAMA_REPO' &&
+    CONFIG.GITHUB_TOKEN !== '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' &&
+    CONFIG.GITHUB_OWNER !== 'kiralzaky01-tech' &&
+    CONFIG.GITHUB_REPO  !== 'laporan-kerja.github.io' &&
     CONFIG.GITHUB_TOKEN.length > 10
   );
 }
